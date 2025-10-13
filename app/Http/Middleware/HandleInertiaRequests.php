@@ -42,10 +42,21 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
+
+            // --- CAMBIO PRINCIPAL AQUÍ ---
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name, // <-- Aquí se usa nuestro accessor!
+                    'email' => $request->user()->email,
+                    'rol' => $request->user()->rol, // <-- Dato útil para el futuro
+                    // Consejo Pro: Generamos iniciales para avatares de texto
+                    'initials' => strtoupper(substr($request->user()->nombres, 0, 1) . substr($request->user()->apellido_paterno, 0, 1))
+                ] : null,
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // --- FIN DEL CAMBIO ---
+
+            'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
 }

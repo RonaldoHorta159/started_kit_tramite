@@ -71,80 +71,81 @@
     }
 }
 
-/* 🎨 Light Mode Palette - Variante */
+/* 🎨 Light Mode Palette - Minimalista y Cómoda */
 :root {
-    --background: hsl(0 0% 100%);
+    --background: hsl(0, 0%, 98%); /* Fondo blanco suave, no puro */
     --foreground: #0D0D0D;
-    --card: hsl(0 0% 100%);
+    --card: hsl(0, 0%, 100%);
     --card-foreground: #0D0D0D;
-    --popover: hsl(0 0% 100%);
+    --popover: hsl(0, 0%, 100%);
     --popover-foreground: #0D0D0D;
-    --primary: #D9042B;                                /* Rojo Principal */
+    --primary: #A6671B;                                /* Marrón/Bronce como primario, es más suave que el negro */
     --primary-foreground: hsl(0 0% 98%);
-    --secondary: #A6671B;                              /* Marrón/Bronce como secundario */
+    --secondary: #BF8821;                              /* Dorado oscuro como secundario */
     --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(0 0% 96.1%);
-    --muted-foreground: hsl(0 0% 45.1%);
-    --accent: #D9AC25;                                 /* Dorado como acento principal */
+    --muted: hsl(0, 0%, 94%);
+    --muted-foreground: hsl(0, 0%, 40%);
+    --accent: #D9AC25;                                 /* Dorado claro para acentos sutiles */
     --accent-foreground: #0D0D0D;
-    --destructive: #D9042B;                            /* Reutilizando el rojo primario */
+    --destructive: #D9042B;                            /* Rojo reservado para acciones destructivas */
     --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 92.8%);
-    --input: hsl(0 0% 89.8%);
-    --ring: #D9042B;
-    --chart-1: #D9042B;                                /* Rojo */
-    --chart-2: #D9AC25;                                /* Dorado */
-    --chart-3: #A6671B;                                /* Marrón/Bronce */
-    --chart-4: #BF8821;                                /* Dorado Oscuro */
-    --chart-5: #6C0215;                                /* Un rojo más oscuro para variedad */
+    --border: hsl(0, 0%, 90%);
+    --input: hsl(0, 0%, 92%);
+    --ring: #BF8821;                                   /* Anillo de foco en dorado oscuro */
+    --chart-1: #A6671B;
+    --chart-2: #BF8821;
+    --chart-3: #D9AC25;
+    --chart-4: #D9042B;
+    --chart-5: hsl(0, 0%, 60%);                         /* Un gris para balancear los gráficos */
     --radius: 0.5rem;
-    --sidebar-background: hsl(0 0% 98%);
+    --sidebar-background: hsl(0, 0%, 96%);
     --sidebar-foreground: #0D0D0D;
-    --sidebar-primary: #D9042B;
+    --sidebar-primary: #A6671B;
     --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(0 0% 94%);
+    --sidebar-accent: hsl(0, 0%, 92%);
     --sidebar-accent-foreground: #0D0D0D;
-    --sidebar-border: hsl(0 0% 91%);
-    --sidebar-ring: #D9042B;
-    --sidebar: hsl(0 0% 98%);
+    --sidebar-border: hsl(0, 0%, 89%);
+    --sidebar-ring: #BF8821;
+    --sidebar: hsl(0, 0%, 96%);
 }
 
-/* 🌙 Dark Mode Palette - Variante */
+/* 🌙 Dark Mode Palette - Minimalista y Cómoda */
 .dark {
-    --background: #0D0D0D;
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(0 0% 10%);
-    --card-foreground: hsl(0 0% 98%);
+    --background: #141414;                             /* Negro suave, no puro */
+    --foreground: hsl(0, 0%, 95%);                     /* Texto blanco suave */
+    --card: #0D0D0D;
+    --card-foreground: hsl(0, 0%, 95%);
     --popover: #0D0D0D;
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: #D9042B;
-    --primary-foreground: hsl(0 0% 98%);
-    --secondary: #A6671B;
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(0 0% 16.08%);
-    --muted-foreground: hsl(0 0% 63.9%);
-    --accent: #D9AC25;
-    --accent-foreground: #0D0D0D;
-    --destructive: #D9042B;
+    --popover-foreground: hsl(0, 0%, 95%);
+    --primary: #D9AC25;                                /* Dorado claro, resalta bien sin ser agresivo */
+    --primary-foreground: #0D0D0D;
+    --secondary: #BF8821;                              /* Dorado oscuro como secundario */
+    --secondary-foreground: #0D0D0D;
+    --muted: hsl(0, 0%, 18%);
+    --muted-foreground: hsl(0, 0%, 60%);
+    --accent: #A6671B;                                 /* Bronce para acentos sutiles */
+    --accent-foreground: hsl(0, 0%, 95%);
+    --destructive: #D9042B;                            /* Rojo se mantiene para alertas */
     --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 14.9%);
-    --input: hsl(0 0% 14.9%);
+    --border: hsl(0, 0%, 20%);
+    --input: hsl(0, 0%, 20%);
     --ring: #D9AC25;
-    --chart-1: #D9042B;
-    --chart-2: #D9AC25;
+    --chart-1: #D9AC25;
+    --chart-2: #BF8821;
     --chart-3: #A6671B;
-    --chart-4: #BF8821;
-    --chart-5: #F20505;                                /* Un rojo más brillante para contraste en oscuro */
-    --sidebar-background: hsl(0 0% 8%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: #D9042B;
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(0 0% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(0 0% 15.9%);
-    --sidebar-ring: #D9042B;
-    --sidebar: hsl(240 5.9% 10%);
+    --chart-4: #D9042B;
+    --chart-5: hsl(0, 0%, 70%);
+    --sidebar-background: #0D0D0D;
+    --sidebar-foreground: hsl(0, 0%, 95%);
+    --sidebar-primary: #D9AC25;
+    --sidebar-primary-foreground: #0D0D0D;
+    --sidebar-accent: hsl(0, 0%, 18%);
+    --sidebar-accent-foreground: hsl(0, 0%, 95%);
+    --sidebar-border: hsl(0, 0%, 18%);
+    --sidebar-ring: #D9AC25;
+    --sidebar: #0D0D0D;
 }
+
 
 @layer base {
     * {

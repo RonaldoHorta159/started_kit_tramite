@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute; // 👈 Importar la clase Attribute
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,9 +20,18 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        // ✅ Se añaden todos los campos de la migración
+        'dni',
+        'nombres',
+        'apellido_paterno',
+        'apellido_materno',
         'email',
+        'celular',
         'password',
+        'foto_path',
+        'primary_area_id',
+        'rol',
+        'estado',
     ];
 
     /**
@@ -44,8 +54,21 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            // Se elimina 'email_verified_at' porque ya no existe
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * ✅ Accessor para generar el atributo 'name' dinámicamente.
+     *
+     * Esto permite que el código existente que use $user->name
+     * siga funcionando sin errores.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}",
+        );
     }
 }

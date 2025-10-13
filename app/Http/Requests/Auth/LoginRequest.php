@@ -7,6 +7,7 @@ use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str; // Asegúrate de importar la clase Str
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -21,13 +22,12 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            // CAMBIO: Se valida 'dni' en lugar de 'email'.
+            'dni' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -42,13 +42,16 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         /** @var User|null $user */
-        $user = Auth::getProvider()->retrieveByCredentials($this->only('email', 'password'));
+        // CAMBIO: Se buscan las credenciales usando 'dni' en lugar de 'email'.
+        $user = Auth::getProvider()->retrieveByCredentials($this->only('dni', 'password'));
 
-        if (! $user || ! Auth::getProvider()->validateCredentials($user, $this->only('password'))) {
+        // CAMBIO: Se valida la contraseña por separado.
+        if (!$user || !Auth::getProvider()->validateCredentials($user, ['password' => $this->password])) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                // CAMBIO: El mensaje de error se asocia al campo 'dni'.
+                'dni' => trans('auth.failed'),
             ]);
         }
 
@@ -64,7 +67,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -73,7 +76,8 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            // CAMBIO: El mensaje de error de 'throttle' se asocia al campo 'dni'.
+            'dni' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -85,10 +89,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return $this->string('email')
-            ->lower()
-            ->append('|'.$this->ip())
-            ->transliterate()
-            ->value();
+        // CAMBIO: La clave para el rate limit ahora se basa en el DNI.
+        return Str::transliterate(Str::lower($this->input('dni')) . '|' . $this->ip());
     }
 }

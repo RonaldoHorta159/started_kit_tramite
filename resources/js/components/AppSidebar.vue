@@ -11,10 +11,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { areas, bandejaEntrada, dashboard, emitir, tiposDocumentos, users } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Building, Folder, Inbox, LayoutGrid, Send, UserRound, } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +22,31 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Emitir',
+        href: emitir(),
+        icon: Send,
+    },
+    {
+        title: 'Bandeja entrada',
+        href: bandejaEntrada(),
+        icon: Inbox,
+    },
+    {
+        title: 'Usuarios',
+        href: users(),
+        icon: UserRound,
+    },
+    {
+        title: 'Areas',
+        href: areas(),
+        icon: Building,
+    },
+    {
+        title: 'Documentos',
+        href: tiposDocumentos(),
+        icon: BookOpen,
     },
 ];
 
@@ -46,7 +71,7 @@ const footerNavItems: NavItem[] = [
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link :href="dashboard()">
-                            <AppLogo />
+                        <AppLogo />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

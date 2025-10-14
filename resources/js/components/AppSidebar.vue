@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -11,10 +10,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { areas, bandejaEntrada, dashboard, emitir, tiposDocumentos, users } from '@/routes';
+import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Building, Inbox, LayoutGrid, Send, UserRound, } from 'lucide-vue-next';
+import { Building, LayoutGrid, } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -23,31 +22,13 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-    {
-        title: 'Emitir',
-        href: emitir(),
-        icon: Send,
-    },
-    {
-        title: 'Bandeja entrada',
-        href: bandejaEntrada(),
-        icon: Inbox,
-    },
-    {
-        title: 'Usuarios',
-        href: users(),
-        icon: UserRound,
-    },
+
     {
         title: 'Areas',
-        href: areas(),
+        href: '/areas',
         icon: Building,
     },
-    {
-        title: 'Documentos',
-        href: tiposDocumentos(),
-        icon: BookOpen,
-    },
+
 ];
 
 // const footerNavItems: NavItem[] = [

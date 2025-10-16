@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import {
     FlexRender,
     getCoreRowModel,
@@ -32,10 +32,67 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import DropdownAction from "./DataTableDemoColumn.vue"
+import { Badge } from "@/components/ui/badge"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Plus } from 'lucide-vue-next';
+import Switch from '@/components/ui/switch/Switch.vue';
+import { toast } from 'vue-sonner';
 
+const showDialog = ref(false);
+const switchStatus = ref(true);
+const nombreArea = ref('');
+
+const form = useForm({
+    nombreArea: '',
+    switchStatus: true,
+    estadoArea: '',
+});
+
+const ShowDialogCreate = () => {
+    // Es buena práctica resetear los valores al abrir el modal
+    nombreArea.value = '';
+    switchStatus.value = false;
+    showDialog.value = true;
+};
 const props = defineProps({
     data: Array,
 })
+
+const SwitchActivate = () => {
+    switchStatus.value = !switchStatus.value;
+    form.estadoArea = switchStatus.value ? 'ACTIVO' : 'INACTIVO';
+};
+
+const submitForm = () => {
+    form.post('/areas', {
+        onSuccess: () => {
+            toast(`El área "${form.nombreArea}" ha sido creada exitosamente 🎉`, {
+                description: 'Se registró correctamente en el sistema.',
+                position: 'top-right',
+                action: {
+                    label: 'Cerrar',
+                    onClick: () => console.log('Cerrar'),
+                },
+            })
+            showDialog.value = false;
+            setTimeout(() => {
+
+                window.location.reload();
+            }, 3000)
+
+        },
+    });
+};
+
+
 
 const data = props.data
 
@@ -78,7 +135,24 @@ const columns = [
     {
         accessorKey: "estado",
         header: "Estado",
-        cell: ({ row }) => h("div", { class: "capitalize" }, row.getValue("estado")),
+        cell: ({ row }) => {
+            const estado = row.getValue('estado');
+
+            // 1. Preparamos las propiedades del Badge de forma condicional
+            const props = {};
+            let texto = '';
+
+            if (estado === 'ACTIVO') {
+
+                texto = 'Activo';
+            } else {
+
+                props.variant = 'outline';
+                texto = 'Inactivo';
+            }
+
+            return h(Badge, props, () => texto);
+        },
     },
     {
         id: "actions",
@@ -145,6 +219,12 @@ const breadcrumbs = [
                         <Input class="max-w-sm" placeholder="Filtrar por nombre..."
                             :model-value="table.getColumn('nombre')?.getFilterValue()"
                             @update:model-value=" table.getColumn('nombre')?.setFilterValue($event)" />
+                        <div class="m-5">
+                            <Button variant="outline" @click="ShowDialogCreate">
+                                <Plus class="h-5"></Plus>
+                                Crear nuevo
+                            </Button>
+                        </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child>
                                 <Button variant="outline" class="ml-auto">
@@ -217,6 +297,42 @@ const breadcrumbs = [
                         </div>
                     </div>
                 </div>
+                <Dialog v-model:open="showDialog">
+                    <DialogContent class="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Crear area</DialogTitle>
+                            <DialogDescription>
+                                Este modal registra el nombre de la nueva area
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div class="grid gap-4 py-4">
+                            <div class="grid grid-cols-4 items-center gap-4">
+                                <Label for="name" class="text-right">
+                                    Nombre
+                                </Label>
+                                <Input id="name" v-model="form.nombreArea" class="col-span-3" />
+                                <span v-if="form.errors.nombreArea" class="col-span-4 text-red-600 text-sm">
+                                    {{ form.errors.nombreArea }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-4 items-center gap-4">
+
+                                <Label for="estado" class="text-right">
+                                    Estado
+                                </Label>
+                                <Switch id="airplane-mode" @click="SwitchActivate" />
+                                <Label for="estado" class="text-right">
+                                    {{ form.estadoArea }}
+                                </Label>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" @click="submitForm">
+                                Crear
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     </AppLayout>

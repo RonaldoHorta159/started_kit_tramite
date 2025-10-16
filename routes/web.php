@@ -14,8 +14,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    Route::resource('/areas', AreaController::class);
+    // Route::resource('/areas', AreaController::class);
+    Route::prefix('areas')->group(function () {
+        Route::get('/', [AreaController::class, 'index'])->name('areas.index');
+        Route::post('/', [AreaController::class, 'store'])->name('areas.store');
 
+    });
 });
 
 

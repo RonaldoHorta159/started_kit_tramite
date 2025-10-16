@@ -36,8 +36,12 @@ class AreaController extends Controller
      */
     public function store(StoreAreaRequest $request)
     {
-        Area::create($request->validated());
-        return to_route('areas.index')->with('succes', 'Area creada correctamente');
+        Area::create([
+            'nombre' => $request->nombreArea,
+            'codigo' => $request->codigo ?? null,
+            'estado' => $request->estadoArea,
+        ]);
+        return to_route('areas.index')->with('success', 'Área creada correctamente');
     }
 
     /**

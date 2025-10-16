@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule; // 👈 1. Importar la clase Rule
+use Illuminate\Validation\Rule;
 
 class StoreAreaRequest extends FormRequest
 {
@@ -25,9 +25,9 @@ class StoreAreaRequest extends FormRequest
     {
         // 3. Definir las reglas de validación para los campos del área
         return [
-            'nombre' => ['required', 'string', 'max:100', 'unique:areas,nombre'],
-            'codigo' => ['required', 'string', 'max:10', 'unique:areas,codigo'],
-            'estado' => ['required', Rule::in(['Activo', 'Inactivo'])],
+            'nombreArea' => ['required', 'string', 'max:100', 'unique:areas,nombre'],
+            'codigo' => ['nullable', 'string', 'max:10', 'unique:areas,codigo'],
+            'estadoArea' => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
         ];
     }
 }

@@ -1,18 +1,17 @@
-<!-- resources/js/pages/areas/components/DataTable/index.vue -->
 <script setup>
+import { ref } from 'vue'
 import { FlexRender } from '@tanstack/vue-table'
+
 import useAreasTable from './useAreasTable'
 import Toolbar from './Toolbar.vue'
 import Pagination from './Pagination.vue'
 import ExpandedRow from './ExpandedRow.vue'
+
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { ChevronDown } from 'lucide-vue-next'
+
 import CreateDialog from './CreateDialog.vue'
-import { ref } from 'vue'
 
 const props = defineProps({
     data: { type: Object, required: true },
@@ -24,10 +23,10 @@ const { table, pageSizes, estadoSet, toggleEstado, clearEstado } =
 
 const showCreate = ref(false)
 function onCreated() {
-    // Si quieres refrescar manualmente tras crear:
     // router.get('/areas', { per_page: table.getState().pagination.pageSize }, { preserveState: false, preserveScroll: true })
 }
 </script>
+
 
 <template>
     <div class="w-full">

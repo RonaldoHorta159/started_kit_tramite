@@ -1,16 +1,19 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'   // 👈 usa el wrapper de shadcn-vue
+import { Switch } from '@/components/ui/switch'   // 👈 wrapper correcto
 import { toast } from 'vue-sonner'
 
-const props = defineProps({ modelValue: { type: Boolean, default: false } })
-const emit = defineEmits(['update:modelValue', 'created'])
+const props = defineProps({
+    modelValue: { type: Boolean, default: false },
+    area: { type: Object, default: null },
+})
+const emit = defineEmits(['update:modelValue', 'updated'])
 
 const open = computed({
     get: () => props.modelValue,
@@ -19,26 +22,36 @@ const open = computed({
 
 const form = useForm({
     nombreArea: '',
-    estadoArea: 'INACTIVO',  // default claro
+    estadoArea: '',
+    codigo: '',
 })
 
-// Booleano ⇄ string (ACTIVO/INACTIVO)
+// precargar desde el prop (incluye estado)
+watch(
+    () => props.area,
+    (a) => {
+        if (!a) return
+        form.nombreArea = a.nombre ?? ''
+        form.estadoArea = a.estado ?? ''   // 'ACTIVO' | 'INACTIVO'
+        form.codigo = a.codigo ?? ''
+    },
+    { immediate: true }
+)
+
+// Booleano ⇄ string
 const estadoBool = computed({
     get: () => form.estadoArea === 'ACTIVO',
     set: (v) => { form.estadoArea = v ? 'ACTIVO' : 'INACTIVO' },
 })
 
 function submitForm() {
-    if (!form.nombreArea?.trim()) return
-    form.post('/areas', {
+    if (!props.area?.id) return
+    form.put(`/areas/${props.area.id}`, {
+        preserveScroll: true,
         onSuccess: () => {
-            toast.success(`El área "${form.nombreArea}" ha sido creada exitosamente 🎉`, {
-                description: 'Se registró correctamente en el sistema.', position: 'top-right'
-            })
+            toast.success(`El área "${form.nombreArea}" ha sido actualizada ✅`)
             open.value = false
-            form.reset()
-            form.estadoArea = 'INACTIVO' // reset explícito
-            emit('created')
+            emit('updated')
         },
     })
 }
@@ -48,8 +61,8 @@ function submitForm() {
     <Dialog v-model:open="open">
         <DialogContent class="sm:max-w-[425px]">
             <DialogHeader>
-                <DialogTitle>Crear área</DialogTitle>
-                <DialogDescription>Este modal registra el nombre de la nueva área.</DialogDescription>
+                <DialogTitle>Editar área</DialogTitle>
+                <DialogDescription>Actualiza los datos del área seleccionada.</DialogDescription>
             </DialogHeader>
 
             <div class="grid gap-4 py-4">
@@ -63,18 +76,18 @@ function submitForm() {
 
                 <div class="grid grid-cols-4 items-center gap-4">
                     <Label class="text-right">Estado</Label>
-                    <!-- ✅ v-model normal (usa modelValue/update:modelValue) -->
+                    <!-- ✅ v-model normal; si alguna vez ves desincronía, añade :key con area.id -->
                     <Switch v-model="estadoBool" :disabled="form.processing" />
-                    <Label class="text-right">{{ form.estadoArea }}</Label>
+                    <Label class="text-right">{{ form.estadoArea || '—' }}</Label>
                 </div>
             </div>
 
             <DialogFooter>
-                <Button type="button" :disabled="form.processing || !form.nombreArea?.trim()" @click="submitForm">
+                <Button :disabled="form.processing" type="button" @click="submitForm">
                     <template v-if="form.processing">
                         <Spinner class="mr-2 h-4 w-4" /> Guardando…
                     </template>
-                    <template v-else>Crear</template>
+                    <template v-else>Guardar cambios</template>
                 </Button>
             </DialogFooter>
         </DialogContent>

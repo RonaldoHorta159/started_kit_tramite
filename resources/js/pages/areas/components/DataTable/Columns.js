@@ -1,11 +1,20 @@
-// resources/js/pages/areas/components/DataTable/Columns.js
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUpDown, Eye } from 'lucide-vue-next';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowUpDown, MoreVertical, Pencil, Trash2 } from 'lucide-vue-next';
 import { h } from 'vue';
 
-export default function createColumns() {
+export default function createColumns(actions = {}) {
+    const { onEdit, onDelete } = actions;
+
     return [
         {
             id: 'select',
@@ -79,19 +88,50 @@ export default function createColumns() {
         {
             id: 'actions',
             enableHiding: false,
-            cell: ({ row }) =>
-                h('div', { class: 'flex items-center justify-end gap-1' }, [
-                    h(
-                        Button,
-                        {
-                            variant: 'ghost',
-                            size: 'sm',
-                            onClick: () => row.toggleExpanded(),
-                            title: 'Ver detalle',
-                        },
-                        () => h(Eye, { class: 'h-4 w-4' }),
-                    ),
-                ]),
+            cell: ({ row }) => {
+                const area = row.original;
+                return h('div', { class: 'flex items-center justify-end' }, [
+                    h(DropdownMenu, null, {
+                        default: () => [
+                            h(DropdownMenuTrigger, { asChild: true }, () =>
+                                h(
+                                    Button,
+                                    {
+                                        variant: 'ghost',
+                                        size: 'icon',
+                                        class: 'h-8 w-8',
+                                    },
+                                    () => h(MoreVertical, { class: 'h-4 w-4' }),
+                                ),
+                            ),
+                            h(DropdownMenuContent, { align: 'end' }, () => [
+                                h(DropdownMenuLabel, null, () => 'Acciones'),
+                                h(DropdownMenuSeparator),
+                                h(
+                                    DropdownMenuItem,
+                                    { onSelect: () => onEdit && onEdit(area) },
+                                    () => [
+                                        h(Pencil, { class: 'mr-2 h-4 w-4' }),
+                                        'Editar',
+                                    ],
+                                ),
+                                h(
+                                    DropdownMenuItem,
+                                    {
+                                        class: 'text-red-600',
+                                        onSelect: () =>
+                                            onDelete && onDelete(area),
+                                    },
+                                    () => [
+                                        h(Trash2, { class: 'mr-2 h-4 w-4' }),
+                                        'Eliminar',
+                                    ],
+                                ),
+                            ]),
+                        ],
+                    }),
+                ]);
+            },
         },
     ];
 }

@@ -97,16 +97,25 @@ class AreaController extends Controller
      */
     public function update(UpdateAreaRequest $request, Area $area)
     {
-        $area->update($request->validated());
-        return to_route('areas.index')->with('success', 'Area actualizada correctamente');
+        $area->update([
+            'nombre' => $request->input('nombreArea'),
+            'codigo' => $request->input('codigo'),
+            'estado' => $request->input('estadoArea'),
+        ]);
+
+        return redirect()->route('areas.index', $request->query())
+            ->with('success', 'Área actualizada correctamente');
     }
+
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Area $area)
+    public function destroy(Request $request, Area $area)
     {
         $area->delete();
-        return to_route('areas.index')->with('success', 'Area eliminada correctamente');
+
+        return redirect()->route('areas.index', $request->query())
+            ->with('success', 'Área eliminada correctamente');
     }
 }

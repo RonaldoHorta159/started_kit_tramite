@@ -1,4 +1,3 @@
-// resources/js/pages/areas/components/DataTable/useAreasTable.js
 import { router } from '@inertiajs/vue3';
 import {
     getCoreRowModel,
@@ -11,7 +10,11 @@ import {
 import { computed, ref } from 'vue';
 import createColumns from './Columns';
 
-export default function useAreasTable(initialData, initialFilter = []) {
+export default function useAreasTable(
+    initialData,
+    initialFilter = [],
+    actions = {},
+) {
     const rows = initialData.data;
     const pageSizes = [5, 10, 15, 30, 50, 100];
 
@@ -52,7 +55,7 @@ export default function useAreasTable(initialData, initialFilter = []) {
 
     const table = useVueTable({
         data: rows,
-        columns: createColumns(), // UI de columnas separada
+        columns: createColumns(actions), // 👈 pasamos onEdit/onDelete
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -126,12 +129,11 @@ export default function useAreasTable(initialData, initialFilter = []) {
         },
     });
 
-    // Filtro de Estado (multi) — utilidades
+    // Filtro estado (se mantiene igual)
     const estadoSet = computed(() => {
         const values = table.getColumn('estado')?.getFilterValue() ?? [];
         return new Set(values);
     });
-
     function toggleEstado(val, checked) {
         const set = new Set(estadoSet.value);
         if (checked) set.add(val);
@@ -140,7 +142,6 @@ export default function useAreasTable(initialData, initialFilter = []) {
         const col = table.getColumn('estado');
         if (col) col.setFilterValue(next.length ? next : undefined);
     }
-
     function clearEstado() {
         const col = table.getColumn('estado');
         if (col) col.setFilterValue(undefined);

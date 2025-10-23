@@ -50,8 +50,7 @@ export default function createColumns(actions = {}) {
                     },
                     () => ['Nombre', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })],
                 ),
-            cell: ({ row }) =>
-                h('div', { class: 'lowercase' }, row.getValue('nombre')),
+            cell: ({ row }) => h('div', null, row.getValue('nombre')),
         },
         {
             accessorKey: 'codigo',
@@ -69,7 +68,7 @@ export default function createColumns(actions = {}) {
                 ),
             cell: ({ row }) => {
                 const val = row.getValue('codigo');
-                return h('div', { class: 'lowercase' }, val ?? '—');
+                return h('div', val ?? '—');
             },
         },
         {

@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100);
-            $table->string('codigo', 10)->nullable();
+            $table->string('codigo', 20)->nullable();
             $table->enum('estado', ['ACTIVO', 'INACTIVO']);
             $table->timestamps();
         });

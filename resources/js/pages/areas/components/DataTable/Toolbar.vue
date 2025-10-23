@@ -1,5 +1,6 @@
 <!-- resources/js/pages/areas/components/DataTable/Toolbar.vue -->
 <script setup>
+import { ref, onBeforeUnmount } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -13,34 +14,49 @@ import { ChevronDown } from 'lucide-vue-next'
 
 const { table, estadoSet } = defineProps({
     table: { type: Object, required: true },
-    estadoSet: { type: Object, required: true },
+    estadoSet: { type: Object, required: true }, // Set(computed)
 })
 const emit = defineEmits(['create', 'toggleEstado', 'clearEstado'])
 
-function setNombre(v) {
+// --- Debounce para "nombre" ---
+const nombreQuery = ref(table.getColumn('nombre')?.getFilterValue() ?? '')
+let nombreTimer = null
+const DEBOUNCE_MS = 400
+
+function onNombreInput(val) {
+    nombreQuery.value = val
+    if (nombreTimer) clearTimeout(nombreTimer)
+    nombreTimer = setTimeout(applyNombreNow, DEBOUNCE_MS)
+}
+
+function applyNombreNow() {
+    if (nombreTimer) {
+        clearTimeout(nombreTimer)
+        nombreTimer = null
+    }
+    const v = (nombreQuery.value ?? '').trim()
     table.getColumn('nombre')?.setFilterValue(v)
 }
-function onCreate() {
-    emit('create')
-}
-function onToggleActivo() {
-    emit('toggleEstado', 'ACTIVO', !estadoSet.has('ACTIVO'))
-}
-function onToggleInactivo() {
-    emit('toggleEstado', 'INACTIVO', !estadoSet.has('INACTIVO'))
-}
-function onClear() {
-    emit('clearEstado')
-}
+
+onBeforeUnmount(() => {
+    if (nombreTimer) clearTimeout(nombreTimer)
+})
+
+// Acciones
+function onCreate() { emit('create') }
+function onToggleActivo() { emit('toggleEstado', 'ACTIVO', !estadoSet.has('ACTIVO')) }
+function onToggleInactivo() { emit('toggleEstado', 'INACTIVO', !estadoSet.has('INACTIVO')) }
+function onClear() { emit('clearEstado') }
 </script>
+
 
 <template>
     <div class="flex gap-2 items-center justify-between py-4">
         <!-- Izquierda: filtros -->
         <div class="flex gap-2 items-center">
-            <Input class="max-w-sm" placeholder="Filtrar por nombre..."
-                :model-value="table.getColumn('nombre')?.getFilterValue()" @update:model-value="setNombre" />
-
+            <Input class="max-w-sm" placeholder="Filtrar por nombre..." v-model="nombreQuery"
+                @input="onNombreInput($event?.target?.value)" @keyup.enter="applyNombreNow" @blur="applyNombreNow"
+                @keydown.esc="() => { nombreQuery = ''; applyNombreNow() }" />
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                     <Button variant="outline" size="sm" class="h-8 border-dashed">

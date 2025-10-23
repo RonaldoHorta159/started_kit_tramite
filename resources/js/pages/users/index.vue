@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { users } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import AppLayout from '@/layouts/AppLayout.vue'
+import { Head, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import DataTable from './components/Datatable/index.vue'
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Usuarios',
-        href: users().url,
-    },
-];
+const page = usePage()
+
+// Props que envía el backend (asegúrate de retornarlos desde UserController@index)
+const data = computed(() => page.props.data)
+const filter = computed(() => page.props.filter ?? [])
+const areasOptions = computed(() => page.props.areasOptions ?? [])
+const rolesOptions = computed(() => page.props.rolesOptions ?? [])
+const estadosOptions = computed(() => page.props.estadosOptions ?? [])
+
+const breadcrumbs = [{ title: 'Usuarios', href: '/users' }]
 </script>
 
 <template>
@@ -18,20 +22,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-            </div>
-            <div
-                class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-            </div>
+            <h1 class="text-3xl font-bold">Gestión de Usuarios</h1>
+
+            <!-- Evita renderizar hasta tener los datos -->
+            <DataTable v-if="data" :data="data" :filter="filter" :areas-options="areasOptions"
+                :roles-options="rolesOptions" :estados-options="estadosOptions" />
+            <div v-else class="text-sm text-muted-foreground">Cargando…</div>
         </div>
     </AppLayout>
 </template>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\TipoDocumento\TipoDocumentoController;
 use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -28,6 +29,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [UserController::class, 'store'])->name('users.store');
         Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+    Route::prefix('tipos-documento')->name('tipos-documento.')->group(function () {
+        Route::get('/', [TipoDocumentoController::class, 'index'])->name('index');
+        Route::post('/', [TipoDocumentoController::class, 'store'])->name('store');
+        Route::put('/{tipos_documento}', [TipoDocumentoController::class, 'update'])->name('update');
+        Route::delete('/{tipos_documento}', [TipoDocumentoController::class, 'destroy'])->name('destroy');
     });
 
 

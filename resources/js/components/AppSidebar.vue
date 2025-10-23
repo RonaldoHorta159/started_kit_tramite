@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Building, LayoutGrid, UsersRound } from 'lucide-vue-next';
+import { Building, LayoutGrid, UsersRound, Files } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -32,6 +32,11 @@ const mainNavItems: NavItem[] = [
         title: 'Usuarios',
         href: '/users',
         icon: UsersRound,
+    },
+    {
+        title: 'Tipos de documentos',
+        href: '/tipos-documento',
+        icon: Files,
     },
 
 ];

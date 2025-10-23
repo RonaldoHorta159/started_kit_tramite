@@ -62,7 +62,8 @@ onBeforeUnmount(() => { if (qTimer) clearTimeout(qTimer) })
 const areaId = ref(null) // null | '*' | '123'
 function onAreaSelect(value) {
     areaId.value = value ?? null
-    emit('setAreaFilter', value || undefined) // manda undefined para “sin filtro”
+    // ⬇️ Si es "Todas" ('*'), no enviar filtro (undefined) → URL limpia
+    emit('setAreaFilter', value === '*' ? undefined : (value || undefined))
 }
 
 /* ------------------------------- Helpers visuales ------------------------------- */

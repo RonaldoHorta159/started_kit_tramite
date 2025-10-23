@@ -11,13 +11,19 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup,
 } from '@/components/ui/select'
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps({
-    // 👇 AHORA el hijo recibe "open" (no modelValue)
     open: { type: Boolean, default: false },             // v-model:open
     user: { type: Object, default: null },
-    areasOptions: { type: Array, default: () => [] },  // [{id,nombre}]
-    rolesOptions: { type: Array, default: () => [] },  // ['Admin',..] o [{value,label}]
+    areasOptions: { type: Array, default: () => [] },    // [{id,nombre}]
+    rolesOptions: { type: Array, default: () => [] },    // ['Admin',..] o [{value,label}]
     estadosOptions: { type: Array, default: () => [] },  // ['Activo',..] o [{value,label}]
 })
 
@@ -40,6 +46,8 @@ const form = useForm({
     email: '',
     celular: '',
     primary_area_id: null,
+    // 🔹 NUEVO: áreas adicionales (pivot)
+    areas_ids: [],
     rol: null,
     estado: 'Activo',
     password: '',
@@ -53,11 +61,12 @@ function hydrateFromUser(u) {
     form.reset(
         'dni', 'nombres', 'apellido_paterno', 'apellido_materno',
         'email', 'celular', 'primary_area_id', 'rol', 'estado',
-        'password', 'password_confirmation',
+        'password', 'password_confirmation', 'areas_ids',
     )
 
     if (!u) { // crear
         form.estado = 'Activo'
+        form.areas_ids = []
         return
     }
 
@@ -69,6 +78,9 @@ function hydrateFromUser(u) {
     form.email = u.email ?? ''
     form.celular = u.celular ?? ''
     form.primary_area_id = u.primary_area_id ? String(u.primary_area_id) : null
+
+    // 🔹 Cargar áreas adicionales desde la relación eager loaded (u.areas)
+    form.areas_ids = Array.isArray(u?.areas) ? u.areas.map(a => String(a.id)) : []
 
     const r = props.rolesOptions.find(r => normVal(r) === u.rol || labelOf(r) === u.rol)
     form.rol = r ? normVal(r) : (u.rol ?? null)
@@ -90,7 +102,21 @@ function initIfNeeded() {
 
 onMounted(initIfNeeded)
 onUpdated(initIfNeeded)
-// ---------------------
+
+// --------------------- Áreas adicionales (UI/acciones) ---------------------
+const areasSet = computed(() => new Set((form.areas_ids ?? []).map(v => String(v))))
+
+function toggleArea(id, checked) {
+    const s = new Set(areasSet.value)
+    const key = String(id)
+    checked ? s.add(key) : s.delete(key)
+    form.areas_ids = Array.from(s) // mantiene como strings; backend normaliza a ints
+}
+
+function clearAreas() {
+    form.areas_ids = []
+}
+// ---------------------------------------------------------------------------
 
 function submitForm() {
     const onSuccess = () => {
@@ -147,15 +173,17 @@ function submitForm() {
                     <div>
                         <Label for="apellido_paterno">Apellido Paterno</Label>
                         <Input id="apellido_paterno" v-model="form.apellido_paterno" />
-                        <span v-if="form.errors.apellido_paterno" class="text-red-500 text-sm">{{
-                            form.errors.apellido_paterno }}</span>
+                        <span v-if="form.errors.apellido_paterno" class="text-red-500 text-sm">
+                            {{ form.errors.apellido_paterno }}
+                        </span>
                     </div>
 
                     <div>
                         <Label for="apellido_materno">Apellido Materno</Label>
                         <Input id="apellido_materno" v-model="form.apellido_materno" />
-                        <span v-if="form.errors.apellido_materno" class="text-red-500 text-sm">{{
-                            form.errors.apellido_materno }}</span>
+                        <span v-if="form.errors.apellido_materno" class="text-red-500 text-sm">
+                            {{ form.errors.apellido_materno }}
+                        </span>
                     </div>
 
                     <div class="col-span-2">
@@ -184,8 +212,51 @@ function submitForm() {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <span v-if="form.errors.primary_area_id" class="text-red-500 text-sm">{{
-                            form.errors.primary_area_id }}</span>
+                        <span v-if="form.errors.primary_area_id" class="text-red-500 text-sm">
+                            {{ form.errors.primary_area_id }}
+                        </span>
+                    </div>
+
+                    <div class="col-span-2">
+                        <Label>Áreas adicionales</Label>
+                        <div class="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="outline" size="sm" class="h-9 border-dashed">
+                                        Seleccionar áreas
+                                        <Badge v-if="(form.areas_ids?.length || 0) > 0" variant="secondary"
+                                            class="ml-2">
+                                            {{ form.areas_ids.length }}
+                                        </Badge>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" class="w-[260px] max-h-80 overflow-auto">
+                                    <DropdownMenuCheckboxItem v-for="a in areasOptions" :key="a.id"
+                                        :checked="areasSet.has(String(a.id))"
+                                        @select.prevent="toggleArea(String(a.id), !areasSet.has(String(a.id)))">
+                                        {{ a.nombre }}
+                                    </DropdownMenuCheckboxItem>
+
+                                    <DropdownMenuCheckboxItem v-if="form.areas_ids?.length" :checked="false"
+                                        class="justify-center" @select.prevent="clearAreas">
+                                        Limpiar selección
+                                    </DropdownMenuCheckboxItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <!-- Chips de seleccionados -->
+                            <div class="flex flex-wrap gap-2">
+                                <Badge v-for="id in form.areas_ids" :key="id" variant="outline">
+                                    {{(areasOptions.find(a => String(a.id) === String(id))?.nombre) ?? id}}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <!-- Errores de validación -->
+                        <span v-if="form.errors['areas_ids'] || form.errors['areas_ids.0']"
+                            class="text-red-500 text-sm">
+                            {{ form.errors['areas_ids'] ?? 'Alguna de las áreas seleccionadas no es válida.' }}
+                        </span>
                     </div>
 
                     <div>

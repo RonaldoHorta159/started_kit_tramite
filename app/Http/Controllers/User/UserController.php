@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
+use App\Models\Area;
 use Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -29,16 +31,21 @@ class UserController extends Controller
         // Filtros multi
         $estadoVals = $request->has('estado')
             ? array_values(array_filter((array) $request->input('estado'), fn($v) => $v !== ''))
-            : null; // ['Activo','Inactivo']
+            : null;
 
         $rolVals = $request->has('rol')
             ? array_values(array_filter((array) $request->input('rol'), fn($v) => $v !== ''))
-            : null; // ['Admin','Usuario','Mesa de Partes']
+            : null;
 
-        $areaId = $request->integer('area_id'); // área primaria
+        // Área filtrada: soporta null y evita '*' (del front) o valores no numéricos
+        $areaParam = $request->input('area_id');
+        $areaId = is_numeric($areaParam) ? (int) $areaParam : null;
 
-        $q = \App\Models\User::query()
-            ->with(['primaryArea']) // necesitas el método primaryArea() en el modelo
+        $q = User::query()
+            ->with([
+                'primaryArea:id,nombre',       // área principal
+                'areas:id,nombre',             // áreas adicionales (pivot)
+            ])
             // Búsqueda de texto (dni, nombres, apellidos, email)
             ->when($request->filled('q'), function ($qb) use ($request) {
                 $v = trim((string) $request->string('q'));
@@ -54,8 +61,17 @@ class UserController extends Controller
             ->when($estadoVals && count($estadoVals) > 0, fn($qb) => $qb->whereIn('estado', $estadoVals))
             // Rol (Admin/Usuario/Mesa de Partes)
             ->when($rolVals && count($rolVals) > 0, fn($qb) => $qb->whereIn('rol', $rolVals))
-            // Área primaria
-            ->when($areaId, fn($qb, $aid) => $qb->where('primary_area_id', $aid))
+            // Área: principal O adicional (pivot area_user)
+            ->when($areaId, function ($qb) use ($areaId) {
+                $qb->where(function ($q2) use ($areaId) {
+                    $q2->where('primary_area_id', $areaId)
+                        ->orWhereExists(function ($s) use ($areaId) {
+                            $s->from('area_user')
+                                ->whereColumn('area_user.user_id', 'users.id')
+                                ->where('area_user.area_id', $areaId);
+                        });
+                });
+            })
             ->orderBy($sortField, $sortDir);
 
         $users = $q->paginate($perPage, ['*'], 'page', $page)
@@ -72,25 +88,17 @@ class UserController extends Controller
             ->values()->all();
 
         // Opciones para selects (áreas, roles, estados)
-        $areasOptions = \App\Models\Area::orderBy('nombre')->get(['id', 'nombre']);
+        $areasOptions = Area::orderBy('nombre')->get(['id', 'nombre']);
         $rolesOptions = ['Admin', 'Usuario', 'Mesa de Partes'];
         $estadosOptions = ['Activo', 'Inactivo'];
 
         return Inertia::render('users/index', [
-            'data' => $users,         // paginator (data, current_page, per_page, last_page, ...)
-            'filter' => $filters,       // [{id,value}, ...] para hidratar filtros
+            'data' => $users,           // paginator
+            'filter' => $filters,       // [{id,value}, ...]
             'areasOptions' => $areasOptions,
             'rolesOptions' => $rolesOptions,
             'estadosOptions' => $estadosOptions,
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -99,26 +107,17 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
-        $data['password'] = Hash::make($data['password']);
-        User::create($data);
+        $areas = $request->input('areas_ids', []); // puede venir vacío
+
+        DB::transaction(function () use ($data, $areas) {
+            $data['password'] = Hash::make($data['password']);
+            /** @var \App\Models\User $user */
+            $user = User::create($data);
+            // Pivot N:M (áreas adicionales)
+            $user->areas()->sync($areas);
+        });
 
         return back()->with('success', 'Usuario creado correctamente.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
     }
 
     /**
@@ -127,13 +126,22 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user)
     {
         $data = $request->validated();
+
         if (empty($data['password'])) {
             unset($data['password']); // no cambiar si viene vacío
         } else {
             $data['password'] = Hash::make($data['password']);
         }
 
-        $user->update($data);
+        DB::transaction(function () use ($user, $data, $request) {
+            $user->update($data);
+
+            // Solo sincroniza pivot si el payload incluye 'areas_ids'.
+            // Esto permite "dejar igual" cuando el front no lo envía.
+            if ($request->has('areas_ids')) {
+                $user->areas()->sync($request->input('areas_ids', []));
+            }
+        });
 
         return back()->with('success', 'Usuario actualizado correctamente.');
     }
@@ -141,11 +149,11 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, \App\Models\User $user)
+    public function destroy(Request $request, User $user)
     {
         $user->delete();
 
-        // Igual que en áreas: vuelve a la lista con los mismos query params
+        // Vuelve a la lista con los mismos query params
         return redirect()->route('users.index', $request->query())
             ->with('success', 'Usuario eliminado correctamente.');
     }

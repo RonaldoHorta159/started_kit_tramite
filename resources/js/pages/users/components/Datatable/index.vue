@@ -86,7 +86,7 @@ function onDeleted() { refresh() }        // tras borrar
 
         <UserFormModal v-model:open="showUserForm" :user="userToEdit" :areas-options="areasOptions"
             :roles-options="rolesOptions" :estados-options="estadosOptions"
-            @update:modelValue="val => { if (!val) userToEdit.value = null }" @saved="onSaved" />
+            @update:open="val => { if (!val) userToEdit.value = null }" @saved="onSaved" />
 
         <DeleteUserAlert v-model:open="showDeleteAlert" :user="userToDelete"
             @update:modelValue="val => { if (!val) userToDelete.value = null }" @deleted="onDeleted" />

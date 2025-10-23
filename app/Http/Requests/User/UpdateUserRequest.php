@@ -16,7 +16,6 @@ class UpdateUserRequest extends FormRequest
     {
         // El {user} viene por route-model binding
         $user = $this->route('user'); // instancia de App\Models\User o id
-
         $userId = is_object($user) ? $user->id : (int) $user;
 
         return [
@@ -31,17 +30,38 @@ class UpdateUserRequest extends FormRequest
             'primary_area_id' => ['nullable', 'integer', 'exists:areas,id'],
             'rol' => ['required', Rule::in(['Admin', 'Usuario', 'Mesa de Partes'])],
             'estado' => ['required', Rule::in(['Activo', 'Inactivo'])],
+
+            // 🔹 Áreas adicionales (pivot)
+            'areas_ids' => ['sometimes', 'array'],
+            'areas_ids.*' => ['integer', 'distinct', 'exists:areas,id'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        // Normaliza primary_area_id
+        $primaryAreaId = $this->primary_area_id;
+        $primaryAreaId = ($primaryAreaId === '' || $primaryAreaId === null) ? null : (int) $primaryAreaId;
+
+        // Normaliza areas_ids: admite string, número, array; castea a ints y deduplica
+        $areas = $this->input('areas_ids', null);
+        if ($areas !== null) {
+            if (!is_array($areas)) {
+                $areas = [$areas];
+            }
+            $areas = array_values(array_unique(
+                array_map(
+                    fn($v) => is_numeric($v) ? (int) $v : $v,
+                    array_filter($areas, fn($v) => $v !== '' && $v !== null)
+                )
+            ));
+        }
+
         $this->merge([
             'dni' => $this->dni ? trim($this->dni) : null,
             'email' => $this->email ? trim(strtolower($this->email)) : null,
-            'primary_area_id' => ($this->primary_area_id === '' || $this->primary_area_id === null)
-                ? null
-                : (int) $this->primary_area_id,
+            'primary_area_id' => $primaryAreaId,
+            'areas_ids' => $areas,
         ]);
     }
 
@@ -52,6 +72,11 @@ class UpdateUserRequest extends FormRequest
             'dni.unique' => 'El DNI ya está registrado por otro usuario.',
             'email.unique' => 'El email ya está registrado por otro usuario.',
             'password.confirmed' => 'La confirmación de contraseña no coincide.',
+
+            'areas_ids.array' => 'Las áreas adicionales deben enviarse como una lista.',
+            'areas_ids.*.integer' => 'Cada área adicional debe ser un ID válido.',
+            'areas_ids.*.distinct' => 'Hay áreas adicionales duplicadas.',
+            'areas_ids.*.exists' => 'Alguna de las áreas adicionales no existe.',
         ];
     }
 
@@ -61,6 +86,7 @@ class UpdateUserRequest extends FormRequest
             'apellido_paterno' => 'apellido paterno',
             'apellido_materno' => 'apellido materno',
             'primary_area_id' => 'área principal',
+            'areas_ids' => 'áreas adicionales',
         ];
     }
 }

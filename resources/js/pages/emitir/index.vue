@@ -1,15 +1,20 @@
-<script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { emitir } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+<script setup>
+// 1. Quitamos 'lang="ts"'
+import AppLayout from '@/layouts/AppLayout.vue'
+import { Head, usePage } from '@inertiajs/vue3'
+import DataTable from './components/DataTable/index.vue'
 
-const breadcrumbs: BreadcrumbItem[] = [
+// 2. Obtenemos TODOS los props que envía EmitirController@index
+//    (Asegúrate de haber actualizado tu controlador como te indiqué en el paso anterior)
+const { documentos, filters, areas, tiposDocumento } = usePage().props
+
+// 3. Definimos los breadcrumbs sin TypeScript
+const breadcrumbs = [
     {
         title: 'Emitir',
-        href: emitir().url,
-    },
-];
+        href: '/emitir' // <-- 4. ESTE ES EL CAMBIO que soluciona el error
+    }
+]
 </script>
 
 <template>
@@ -17,21 +22,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     <Head title="Emitir" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-            </div>
-            <div
-                class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-            </div>
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 md:p-8">
+            <h1 class="text-3xl font-bold">Gestión de Documentos Emitidos</h1>
+
+            <DataTable :documentos="documentos" :filters="filters" :areas="areas" :tipos-documento="tiposDocumento" />
         </div>
     </AppLayout>
 </template>

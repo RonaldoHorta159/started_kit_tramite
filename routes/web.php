@@ -3,6 +3,7 @@
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\TipoDocumento\TipoDocumentoController;
 use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\Emitir\EmitirController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,6 +39,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{tipos_documento}', [TipoDocumentoController::class, 'destroy'])->name('destroy');
     });
 
+    // <--- 2. NUEVO GRUPO DE RUTAS "EMITIR" AÑADIDO --->
+    Route::prefix('emitir')->name('emitir.')->group(function () {
+        Route::get('/', [EmitirController::class, 'index'])->name('index');
+        Route::post('/', [EmitirController::class, 'store'])->name('store');
+        // Usamos PUT para actualizar, es el estándar
+        Route::put('/{documento}', [EmitirController::class, 'update'])->name('update');
+        Route::delete('/{documento}', [EmitirController::class, 'destroy'])->name('destroy');
+    });
+    // <--- FIN DEL GRUPO "EMITIR" --->
 
 });
 

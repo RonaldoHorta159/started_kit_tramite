@@ -16,7 +16,14 @@ export default function useUsersTable(
     actions = {},
 ) {
     const _data = () => toValue(dataRef) || {};
-    const _filter = () => toValue(filterRef) || [];
+    const _filter = () => toValue(filterRef) || {};
+
+    // Helper para transformar el objeto de filtro al formato de array de TanStack
+    const transformFilterObject = (filterObj) => {
+        return Object.entries(filterObj)
+            .filter(([, value]) => value !== null && value !== undefined && value !== '')
+            .map(([id, value]) => ({ id, value }));
+    };
 
     // estado base derivado de props reactivas
     const rowsRef = ref(_data().data ?? []);
@@ -24,7 +31,7 @@ export default function useUsersTable(
     const pageSizes = [5, 10, 15, 30, 50, 100];
 
     const sorting = ref([]);
-    const columnFilters = ref(_filter());
+    const columnFilters = ref(transformFilterObject(_filter()));
     const columnVisibility = ref({});
     const rowSelection = ref({});
     const expanded = ref({});
@@ -151,7 +158,7 @@ export default function useUsersTable(
     watch(
         filterRef,
         (nf) => {
-            columnFilters.value = nf || [];
+            columnFilters.value = transformFilterObject(nf || {});
         },
         { deep: true, immediate: true },
     );

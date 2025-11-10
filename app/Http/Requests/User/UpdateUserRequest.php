@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\Estado;
+use App\Enums\Rol;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +11,7 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // o valida con políticas si aplica
+        return $this->user()->rol === Rol::ADMIN;
     }
 
     public function rules(): array
@@ -28,8 +30,8 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', 'string', 'min:8', 'confirmed'], // opcional
             'foto_path' => ['nullable', 'string', 'max:255'],
             'primary_area_id' => ['nullable', 'integer', 'exists:areas,id'],
-            'rol' => ['required', Rule::in(['Admin', 'Usuario', 'Mesa de Partes'])],
-            'estado' => ['required', Rule::in(['Activo', 'Inactivo'])],
+            'rol' => ['required', Rule::enum(Rol::class)],
+            'estado' => ['required', Rule::enum(Estado::class)],
 
             // 🔹 Áreas adicionales (pivot)
             'areas_ids' => ['sometimes', 'array'],

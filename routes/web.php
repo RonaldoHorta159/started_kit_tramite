@@ -23,12 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'index', 'store', 'update', 'destroy'
     ]);
 
-    Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('users.index');
-        Route::post('/', [UserController::class, 'store'])->name('users.store');
-        Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    });
+    Route::resource('users', UserController::class)->only([
+        'index', 'store', 'update', 'destroy'
+    ]);
 
     Route::resource('tipos-documento', TipoDocumentoController::class)
         ->parameters(['tipos-documento' => 'tipo_documento']) // Opcional: para claridad

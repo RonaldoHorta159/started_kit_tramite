@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Estado;
+use App\Enums\Rol;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -39,6 +41,8 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'estado' => Estado::class,
+            'rol' => Rol::class,
         ];
     }
 
@@ -64,7 +68,39 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    // (Opcional) constantes para mantener consistencia en rol/estado
-    // public const ROLES = ['Admin','Usuario','Mesa de Partes'];
-    // public const ESTADOS = ['Activo','Inactivo'];
+    /**
+     * Scope para aplicar filtros y ordenamiento dinámico.
+     */
+    public function scopeFilterAndSort($query, array $filters, array $sort)
+    {
+        $query->when($filters['q'] ?? null, function ($q, $search) {
+            $q->where(function ($sub) use ($search) {
+                $sub->where('dni', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('nombres', 'like', '%'.$search.'%')
+                    ->orWhere('apellido_paterno', 'like', '%'.$search.'%')
+                    ->orWhere('apellido_materno', 'like', '%'.$search.'%');
+            });
+        })
+        ->when($filters['estado'] ?? null, function ($q, $estado) {
+            $q->whereIn('estado', (array) $estado);
+        })
+        ->when($filters['rol'] ?? null, function ($q, $rol) {
+            $q->whereIn('rol', (array) $rol);
+        })
+        ->when($filters['area_id'] ?? null, function ($q, $areaId) {
+            $q->where(function ($q2) use ($areaId) {
+                $q2->where('primary_area_id', $areaId)
+                    ->orWhereHas('areas', function ($q3) use ($areaId) {
+                        $q3->where('areas.id', $areaId);
+                    });
+            });
+        });
+
+        if (!empty($sort['field'])) {
+            $query->orderBy($sort['field'], $sort['direction'] ?? 'asc');
+        }
+
+        return $query;
+    }
 }

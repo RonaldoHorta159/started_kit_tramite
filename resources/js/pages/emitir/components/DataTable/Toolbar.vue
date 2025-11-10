@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { debounce } from 'lodash'
+import * as emitir from '@/routes/emitir'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { PlusCircle } from 'lucide-vue-next'
@@ -21,7 +22,7 @@ const search = ref(props.filters.search)
 // Esto espera 300ms después de que el usuario deja de escribir para enviar la petición.
 watch(search, debounce((value) => {
     router.get(
-        route('emitir.index'), // Llama a la ruta 'emitir.index'
+        emitir.index(), // Llama a la ruta 'emitir.index'
         { search: value },   // Pasa el valor de búsqueda como query param
         {
             preserveState: true, // Mantiene el estado de la página (no recarga)

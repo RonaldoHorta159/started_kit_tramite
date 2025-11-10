@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('movimientos', function (Blueprint $table) {
-            $table->enum('estado', ['Derivado','Atendido','Rechazado'])->change();
+            $table->enum('estado', ['Recibido', 'Derivado','Atendido','Rechazado'])->change();
         });
     }
 };

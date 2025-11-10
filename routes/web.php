@@ -20,6 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::get('/bandeja-entrada', [BandejaEntradaController::class, 'index'])->name('bandeja-entrada.index');
+    Route::post('/bandeja-entrada/{documento}/recibir', [BandejaEntradaController::class, 'recibir'])->name('bandeja-entrada.recibir');
+    Route::post('/bandeja-entrada/{documento}/derivar', [BandejaEntradaController::class, 'derivar'])->name('bandeja-entrada.derivar');
 
     // ... (tus rutas de areas, users, tipos-documento) ...
     Route::resource('areas', AreaController::class)->only([

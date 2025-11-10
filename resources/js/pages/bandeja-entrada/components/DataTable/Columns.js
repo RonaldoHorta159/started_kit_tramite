@@ -3,9 +3,18 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ArrowUpDown, MoreHorizontal } from 'lucide-vue-next'
 import { Checkbox } from '@/components/ui/checkbox'
+import { EstadoDocumento } from '@/Enums/EstadoDocumento'
 
-export default function createColumns({ onDerivar, onArchivar, onVerTrazabilidad }) {
+export default function createColumns({ onRecibir, onDerivar, onArchivar, onVerTrazabilidad }) {
     return [
+        {
+            id: 'q', // Columna "dummy" para el filtro global
+            accessorKey: 'q',
+            enableHiding: true, // Oculta por defecto
+            enableSorting: false,
+            header: () => null, // No muestra encabezado
+            cell: () => null,   // No muestra contenido
+        },
         {
             id: 'select',
             header: ({ table }) => h(Checkbox, {
@@ -61,6 +70,15 @@ export default function createColumns({ onDerivar, onArchivar, onVerTrazabilidad
             enableHiding: false,
             cell: ({ row }) => {
                 const doc = row.original
+
+                if (doc.estado === EstadoDocumento.EN_TRAMITE) {
+                    return h(Button, {
+                        variant: 'outline',
+                        size: 'sm',
+                        onClick: () => onRecibir(doc),
+                    }, () => 'Recibir')
+                }
+
                 return h('div', { class: 'relative' }, h(DropdownMenu, {}, () => [
                     h(DropdownMenuTrigger, { asChild: true }, () => h(Button, { variant: 'ghost', class: 'h-8 w-8 p-0' }, () => [
                         h('span', { class: 'sr-only' }, 'Open menu'),
@@ -70,7 +88,7 @@ export default function createColumns({ onDerivar, onArchivar, onVerTrazabilidad
                         h(DropdownMenuLabel, {}, 'Acciones'),
                         h(DropdownMenuItem, { onClick: () => onVerTrazabilidad(doc) }, 'Ver Trazabilidad'),
                         h(DropdownMenuSeparator),
-                        h(DropdownMenuItem, { onClick: () => onDerivar(doc) }, 'Derivar'),
+                        doc.estado === 'Recibido' ? h(DropdownMenuItem, { onClick: () => onDerivar(doc) }, 'Derivar') : null,
                         h(DropdownMenuItem, { onClick: () => onArchivar(doc) }, 'Archivar'),
                     ]),
                 ]))

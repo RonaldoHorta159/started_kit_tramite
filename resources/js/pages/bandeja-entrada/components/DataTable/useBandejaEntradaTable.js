@@ -59,9 +59,8 @@ export default function useBandejaEntradaTable(
             ...buildFilters(),
         };
         router.get('/bandeja-entrada', s, {
-            preserveState: true, // Usamos preserveState para una experiencia más fluida
+            preserveState: false,
             preserveScroll: true,
-            replace: true,
         });
     }
 

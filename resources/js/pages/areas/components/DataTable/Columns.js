@@ -77,10 +77,18 @@ export default function createColumns(actions = {}) {
             cell: ({ row }) => {
                 const estado = row.getValue('estado');
                 const props = {};
-                const texto =
-                    estado === 'ACTIVO'
-                        ? 'Activo'
-                        : ((props.variant = 'outline'), 'Inactivo');
+                // Normalizar distintos formatos que puede venir desde el backend
+                const isActive =
+                    estado === 'ACTIVO' ||
+                    estado === 'Activo' ||
+                    estado === 'active' ||
+                    estado === 1 ||
+                    estado === '1' ||
+                    estado === true ||
+                    estado === 'true';
+                const texto = isActive
+                    ? 'Activo'
+                    : ((props.variant = 'outline'), 'Inactivo');
                 return h(Badge, props, () => texto);
             },
         },

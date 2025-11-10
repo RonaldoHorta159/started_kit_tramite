@@ -21,8 +21,8 @@ const open = computed({
 })
 
 const form = useForm({
-    nombreArea: '',
-    estadoArea: '',
+    nombre: '',
+    estado: '',
     codigo: '',
 })
 
@@ -31,8 +31,8 @@ watch(
     () => props.area,
     (a) => {
         if (!a) return
-        form.nombreArea = a.nombre ?? ''
-        form.estadoArea = a.estado ?? ''   // 'ACTIVO' | 'INACTIVO'
+        form.nombre = a.nombre ?? ''
+        form.estado = a.estado ?? ''   // 'Activo' | 'Inactivo'
         form.codigo = a.codigo ?? ''
     },
     { immediate: true }
@@ -40,8 +40,8 @@ watch(
 
 // Booleano ⇄ string
 const estadoBool = computed({
-    get: () => form.estadoArea === 'ACTIVO',
-    set: (v) => { form.estadoArea = v ? 'ACTIVO' : 'INACTIVO' },
+    get: () => form.estado === 'Activo',
+    set: (v) => { form.estado = v ? 'Activo' : 'Inactivo' },
 })
 
 function submitForm() {
@@ -49,7 +49,7 @@ function submitForm() {
     form.put(`/areas/${props.area.id}`, {
         preserveScroll: true,
         onSuccess: () => {
-            toast.success(`El área "${form.nombreArea}" ha sido actualizada ✅`)
+            toast.success(`El área "${form.nombre}" ha sido actualizada ✅`)
             open.value = false
             emit('updated')
         },
@@ -68,9 +68,9 @@ function submitForm() {
             <div class="grid gap-4 py-4">
                 <div class="grid grid-cols-4 items-center gap-4">
                     <Label for="name" class="text-right">Nombre</Label>
-                    <Input id="name" v-model="form.nombreArea" class="col-span-3" :disabled="form.processing" />
-                    <span v-if="form.errors?.nombreArea" class="col-span-4 text-red-600 text-sm">
-                        {{ form.errors.nombreArea }}
+                    <Input id="name" v-model="form.nombre" class="col-span-3" :disabled="form.processing" />
+                    <span v-if="form.errors?.nombre" class="col-span-4 text-red-600 text-sm">
+                        {{ form.errors.nombre }}
                     </span>
                 </div>
 
@@ -78,7 +78,7 @@ function submitForm() {
                     <Label class="text-right">Estado</Label>
                     <!-- ✅ v-model normal; si alguna vez ves desincronía, añade :key con area.id -->
                     <Switch v-model="estadoBool" :disabled="form.processing" />
-                    <Label class="text-right">{{ form.estadoArea || '—' }}</Label>
+                    <Label class="text-right">{{ form.estado || '—' }}</Label>
                 </div>
             </div>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\Emitir\CorrelativeController;
 use App\Http\Controllers\TipoDocumento\TipoDocumentoController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Emitir\EmitirController;
@@ -17,13 +18,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // Route::resource('/areas', AreaController::class);
-    Route::prefix('areas')->group(function () {
-        Route::get('/', [AreaController::class, 'index'])->name('areas.index');
-        Route::post('/', [AreaController::class, 'store'])->name('areas.store');
-        Route::put('/{area}', [AreaController::class, 'update'])->name('areas.update');
-        Route::delete('/{area}', [AreaController::class, 'destroy'])->name('areas.destroy');
-    });
+    // ... (tus rutas de areas, users, tipos-documento) ...
+    Route::resource('areas', AreaController::class)->only([
+        'index', 'store', 'update', 'destroy'
+    ]);
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('users.index');
@@ -32,22 +30,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    Route::prefix('tipos-documento')->name('tipos-documento.')->group(function () {
-        Route::get('/', [TipoDocumentoController::class, 'index'])->name('index');
-        Route::post('/', [TipoDocumentoController::class, 'store'])->name('store');
-        Route::put('/{tipos_documento}', [TipoDocumentoController::class, 'update'])->name('update');
-        Route::delete('/{tipos_documento}', [TipoDocumentoController::class, 'destroy'])->name('destroy');
-    });
+    Route::resource('tipos-documento', TipoDocumentoController::class)
+        ->parameters(['tipos-documento' => 'tipo_documento']) // Opcional: para claridad
+        ->only(['index', 'store', 'update', 'destroy']);
 
-    // <--- 2. NUEVO GRUPO DE RUTAS "EMITIR" AÑADIDO --->
     Route::prefix('emitir')->name('emitir.')->group(function () {
         Route::get('/', [EmitirController::class, 'index'])->name('index');
         Route::post('/', [EmitirController::class, 'store'])->name('store');
-        // Usamos PUT para actualizar, es el estándar
         Route::put('/{documento}', [EmitirController::class, 'update'])->name('update');
         Route::delete('/{documento}', [EmitirController::class, 'destroy'])->name('destroy');
     });
-    // <--- FIN DEL GRUPO "EMITIR" --->
+
+    // --- INICIO DE LA CORRECCIÓN DE RUTA ---
+    Route::get('/correlatives/{tipo_documento}', [CorrelativeController::class, 'show'])
+        ->name('correlatives.show')
+        ->where('tipo_documento', '[0-9]+')
+        ->middleware('throttle:30,1'); // <-- MEJORA DE SEGURIDAD (30 peticiones/min)
+    // --- FIN DE LA CORRECCIÓN DE RUTA ---
 
 });
 

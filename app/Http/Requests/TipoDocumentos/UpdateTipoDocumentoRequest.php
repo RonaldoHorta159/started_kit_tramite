@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\TipoDocumentos;
 
+use App\Enums\Estado;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,7 @@ class UpdateTipoDocumentoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Ajusta a políticas si corresponde
+        return $this->user()->rol === 'Admin';
     }
 
     public function rules(): array
@@ -29,7 +30,7 @@ class UpdateTipoDocumentoRequest extends FormRequest
                 'max:100',
                 Rule::unique('tipos_documento', 'nombre')->ignore($id),
             ],
-            'estado' => ['required', Rule::in(['Activo', 'Inactivo'])],
+            'estado' => ['required', Rule::enum(Estado::class)],
         ];
     }
 

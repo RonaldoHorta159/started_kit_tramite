@@ -12,14 +12,16 @@ import createColumns from './Columns';
 
 export default function useAreasTable(
     initialData,
-    initialFilter = [],
+    initialFilter = {},
     actions = {},
 ) {
     const rows = initialData.data;
     const pageSizes = [5, 10, 15, 30, 50, 100];
 
     const sorting = ref([]);
-    const columnFilters = ref(initialFilter ?? []);
+    const columnFilters = ref(
+        Object.entries(initialFilter).map(([id, value]) => ({ id, value }))
+    );
     const columnVisibility = ref({});
     const rowSelection = ref({});
     const expanded = ref({});

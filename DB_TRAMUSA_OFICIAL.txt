@@ -1,0 +1,193 @@
+-- ============================================================
+-- ESQUEMA BASE (INTRAOFICINAS) - MySQL 8+
+-- Sin remitentes externos. Trámite entre áreas por usuarios.
+-- ============================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS=0;
+
+-- ------------------------------------------------------------
+-- AREAS
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `areas`;
+CREATE TABLE `areas` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `codigo` VARCHAR(10) NULL,
+  `estado` ENUM('Activo','Inactivo') NOT NULL DEFAULT 'Activo',
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- (Opcional) índice único si el código es sigla oficial:
+-- CREATE UNIQUE INDEX `areas_codigo_unique` ON `areas` (`codigo`);
+
+-- ------------------------------------------------------------
+-- USERS (simplificado, compatible con flujo interno)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `dni` VARCHAR(8) NOT NULL,
+  `nombres` VARCHAR(255) NOT NULL,
+  `apellido_paterno` VARCHAR(255) NOT NULL,
+  `apellido_materno` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `celular` VARCHAR(15) NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `foto_path` VARCHAR(255) NULL,
+  `primary_area_id` BIGINT UNSIGNED NULL COMMENT 'Área principal del usuario',
+  `rol` ENUM('Admin','Usuario') NOT NULL DEFAULT 'Usuario',
+  `estado` ENUM('Activo','Inactivo') NOT NULL DEFAULT 'Activo',
+  `remember_token` VARCHAR(100) NULL,
+  -- columnas típicas Fortify 2FA (opcionales)
+  `two_factor_secret` TEXT NULL,
+  `two_factor_recovery_codes` TEXT NULL,
+  `two_factor_confirmed_at` TIMESTAMP NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `users_dni_unique` (`dni`),
+  UNIQUE KEY `users_email_unique` (`email`),
+  KEY `users_primary_area_id_foreign` (`primary_area_id`),
+  CONSTRAINT `users_primary_area_id_foreign`
+    FOREIGN KEY (`primary_area_id`) REFERENCES `areas` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- PIVOT: AREA_USER (áreas adicionales de un usuario)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `area_user`;
+CREATE TABLE `area_user` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `area_id` BIGINT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `area_user_unique` (`user_id`,`area_id`),
+  KEY `area_user_user_id_foreign` (`user_id`),
+  KEY `area_user_area_id_foreign` (`area_id`),
+  CONSTRAINT `area_user_user_id_foreign`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `area_user_area_id_foreign`
+    FOREIGN KEY (`area_id`) REFERENCES `areas` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- TIPOS DE DOCUMENTO
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `tipos_documento`;
+CREATE TABLE `tipos_documento` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(100) NOT NULL,
+  `estado` ENUM('Activo','Inactivo') NOT NULL DEFAULT 'Activo',
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tipos_documento_nombre_unique` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- CONTROL DE CORRELATIVOS (por tipo + año)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `correlativos_tipos_anuales`;
+CREATE TABLE `correlativos_tipos_anuales` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `tipo_documento_id` BIGINT UNSIGNED NOT NULL,
+  `anio` YEAR NOT NULL,
+  `ultimo_correlativo` INT UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `corr_tipo_anio_unique` (`tipo_documento_id`,`anio`),
+  CONSTRAINT `cta_tipo_fk`
+    FOREIGN KEY (`tipo_documento_id`) REFERENCES `tipos_documento` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- DOCUMENTOS (núcleo del trámite interno)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `documentos`;
+CREATE TABLE `documentos` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` BIGINT UNSIGNED NULL COMMENT 'Para respuestas (documento padre)',
+
+  `codigo_unico` VARCHAR(20) NOT NULL,
+  `nro_documento` VARCHAR(50) NOT NULL COMMENT 'Correlativo visible: 0001-YYYY',
+
+  -- legado (mantener si había reportes antiguos)
+  `correlativo_area` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Correlativo por AREA (legado)',
+
+  -- correlativo real por TIPO + AÑO
+  `correlativo_tipo` INT UNSIGNED NOT NULL COMMENT 'Correlativo por TIPO+ANIO',
+
+  `asunto` TEXT NOT NULL,
+  `folios` INT UNSIGNED NOT NULL,
+  `prioridad` ENUM('Normal','Urgente') NOT NULL DEFAULT 'Normal',
+  `archivo_path` VARCHAR(255) NULL COMMENT 'Adjunto opcional (disco privado)',
+
+  `tipo_documento_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'Usuario que CREÓ el documento',
+  `area_origen_id` BIGINT UNSIGNED NOT NULL COMMENT 'Área que emite',
+  `area_actual_id` BIGINT UNSIGNED NOT NULL COMMENT 'Área que lo tiene AHORA',
+
+  `estado` ENUM('Recibido','En Trámite','Archivado','Atendido','Rechazado') NOT NULL,
+
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  `anio_creacion` YEAR AS (YEAR(`created_at`)) STORED COMMENT 'Columna generada para índice por año',
+
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `documentos_codigo_unico_unique` (`codigo_unico`),
+
+  KEY `idx_documentos_bandeja` (`area_actual_id`,`estado`),
+  KEY `idx_documentos_creador` (`user_id`),
+  KEY `idx_documentos_fecha_creacion` (`created_at`),
+
+  UNIQUE KEY `documentos_tipo_correlativo_anio_unique` (`tipo_documento_id`,`correlativo_tipo`,`anio_creacion`),
+
+  CONSTRAINT `documentos_parent_fk`       FOREIGN KEY (`parent_id`)        REFERENCES `documentos` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `documentos_tipo_fk`         FOREIGN KEY (`tipo_documento_id`) REFERENCES `tipos_documento` (`id`),
+  CONSTRAINT `documentos_user_fk`         FOREIGN KEY (`user_id`)           REFERENCES `users` (`id`),
+  CONSTRAINT `documentos_area_origen_fk`  FOREIGN KEY (`area_origen_id`)    REFERENCES `areas` (`id`),
+  CONSTRAINT `documentos_area_actual_fk`  FOREIGN KEY (`area_actual_id`)    REFERENCES `areas` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- MOVIMIENTOS (historial / trazabilidad)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `movimientos`;
+CREATE TABLE `movimientos` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `documento_id` BIGINT UNSIGNED NOT NULL,
+  `area_origen_id` BIGINT UNSIGNED NOT NULL COMMENT 'Área que envía',
+  `area_destino_id` BIGINT UNSIGNED NOT NULL COMMENT 'Área que recibe',
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'Usuario que realiza el movimiento',
+  `proveido` TEXT NULL COMMENT 'Decreto o nota de derivación',
+  `estado` ENUM('Derivado','Atendido','Rechazado') NOT NULL,
+  `archivo_adjunto_path` VARCHAR(255) NULL COMMENT 'Adjunto opcional en la derivación/respuesta',
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_movimientos_historial` (`documento_id`),
+  KEY `idx_movimientos_area_destino` (`area_destino_id`),
+  CONSTRAINT `mov_doc_fk`   FOREIGN KEY (`documento_id`)   REFERENCES `documentos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `mov_ori_fk`   FOREIGN KEY (`area_origen_id`) REFERENCES `areas` (`id`),
+  CONSTRAINT `mov_des_fk`   FOREIGN KEY (`area_destino_id`) REFERENCES `areas` (`id`),
+  CONSTRAINT `mov_user_fk`  FOREIGN KEY (`user_id`)        REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS=1;
+
+-- ============================================================
+-- Notas:
+-- - `nro_documento` es visible (p.ej. "0007-2025"), se forma en backend
+--   con `correlativo_tipo` + año actual. La unicidad real la garantiza
+--   (tipo_documento_id, correlativo_tipo, anio_creacion).
+-- - `archivo_path` debe almacenarse en disco PRIVADO y descargarse por
+--   ruta autenticada con Policy.
+-- - Índices: bandeja (area_actual_id, estado) e historial (documento_id).
+-- ============================================================

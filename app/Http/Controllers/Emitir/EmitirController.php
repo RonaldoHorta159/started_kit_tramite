@@ -1,27 +1,25 @@
 <?php
 
-// 1. ESTE ES EL NAMESPACE CORRECTO BASADO EN TU CARPETA
 namespace App\Http\Controllers\Emitir;
 
-use App\Http\Controllers\Controller; // <--- Importante
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Emitir\StoreDocumentoRequest;
 use App\Http\Requests\Emitir\UpdateDocumentoRequest;
 use App\Models\Documento;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
 use App\Models\Area;
 use App\Models\TipoDocumento;
+use App\Models\Movimiento;     // <--- DESCOMENTADO
+use App\Services\CorrelativeService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB; // <--- IMPORTADO
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
-// 2. Extiende de 'Controller', no de 'EmitirController'
 class EmitirController extends Controller
 {
-    /**
-     * Muestra la lista de documentos emitidos por el usuario.
-     */
     /**
      * Muestra la lista de documentos emitidos por el usuario.
      */
@@ -30,66 +28,91 @@ class EmitirController extends Controller
         $documentos = Documento::query()
             ->createdBy(Auth::id())
             ->with(['tipoDocumento', 'areaOrigen', 'areaActual'])
-            ->when($request->input('search'), function ($query, $search) {
-                $query->where('codigo_unico', 'like', "%{$search}%")
-                    ->orWhere('nro_documento', 'like', "%{$search}%")
-                    ->orWhere('asunto', 'like', "%{$search}%");
+
+            // --- INICIO DE LA CORRECCIÓN DE BÚSQUEDA ---
+            ->when($request->input('search'), function ($q, $s) {
+                // Se anida la lógica 'orWhere' para no romper el 'createdBy'
+                $q->where(function ($qq) use ($s) {
+                    $qq->where('codigo_unico', 'like', "%{$s}%")
+                        ->orWhere('nro_documento', 'like', "%{$s}%")
+                        ->orWhere('asunto', 'like', "%{$s}%");
+                });
             })
+            // --- FIN DE LA CORRECCIÓN DE BÚSQUEDA ---
+
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
-        // 2. Obtenemos los datos para los <Select> de los modales
-        // (Esto es crucial para CreateDialog y EditDialog)
+        // Datos para los <Select> de los modales
         $areas = Area::where('estado', 'Activo')->select('id', 'nombre')->get();
         $tiposDocumento = TipoDocumento::where('estado', 'Activo')->select('id', 'nombre')->get();
 
-        // 3. Pasamos los nuevos datos a la vista
         return Inertia::render('emitir/index', [
             'documentos' => $documentos,
             'filters' => $request->only(['search']),
-            'areas' => $areas,                 // <-- AÑADIDO
-            'tiposDocumento' => $tiposDocumento, // <-- AÑADIDO
+            'areas' => $areas,
+            'tiposDocumento' => $tiposDocumento,
         ]);
     }
 
     /**
      * Almacena un nuevo documento emitido.
      */
-    public function store(StoreDocumentoRequest $request)
+    public function store(StoreDocumentoRequest $request, CorrelativeService $correlativeService)
     {
         $usuario = Auth::user();
         $validatedData = $request->validated();
+        // Corrección de zona horaria
+        $anio = now(config('app.timezone'))->year;
 
         $archivoPath = null;
         if ($request->hasFile('archivo')) {
             $archivoPath = $request->file('archivo')->store('documentos', 'private');
         }
 
-        // TODO: Mover a CorrelativeService
-        $temporalCorrelativo = Documento::where('tipo_documento_id', $validatedData['tipo_documento_id'])
-            ->where('anio_creacion', now()->year)->count() + 1;
-        $nroDocumento = str_pad($temporalCorrelativo, 4, '0', STR_PAD_LEFT) . '-' . now()->year;
-        $codigoUnico = Str::random(10); // Placeholder
+        // 1. Genera número (transacción interna del service)
+        $siguienteNumero = $correlativeService->generateNextNumber(
+            $validatedData['tipo_documento_id'],
+            $anio
+        );
 
-        $documento = Documento::create([
-            'user_id' => $usuario->id,
-            'area_origen_id' => $usuario->primary_area_id,
-            'area_actual_id' => $validatedData['area_destino_id'],
-            'tipo_documento_id' => $validatedData['tipo_documento_id'],
-            'asunto' => $validatedData['asunto'],
-            'folios' => $validatedData['folios'],
-            'prioridad' => $validatedData['prioridad'] ?? 'Normal',
-            'archivo_path' => $archivoPath,
-            'estado' => 'En Trámite',
-            'correlativo_tipo' => $temporalCorrelativo,
-            'nro_documento' => $nroDocumento,
-            'codigo_unico' => $codigoUnico,
-            'correlativo_area' => 0,
-            'parent_id' => $validatedData['parent_id'] ?? null,
-        ]);
+        $nroDocumento = $correlativeService->formatNumber($siguienteNumero, $anio);
+        $codigoUnico = Str::upper(Str::random(10));
 
-        return Redirect::route('emitir.index')->with('success', 'Documento emitido correctamente.');
+        // --- INICIO DE LA CORRECCIÓN DE TRANSACCIÓN ---
+        // 2. Envuelve la creación en una transacción para evitar "huecos" [cite: 1601]
+        return DB::transaction(function () use ($usuario, $validatedData, $archivoPath, $siguienteNumero, $nroDocumento, $codigoUnico) {
+
+            $documento = Documento::create([
+                'user_id' => $usuario->id,
+                'area_origen_id' => $usuario->primary_area_id,
+                'area_actual_id' => $validatedData['area_destino_id'],
+                'tipo_documento_id' => $validatedData['tipo_documento_id'],
+                'asunto' => $validatedData['asunto'],
+                'folios' => $validatedData['folios'],
+                'prioridad' => $validatedData['prioridad'],
+                'archivo_path' => $archivoPath,
+                'estado' => 'En Trámite',
+                'correlativo_tipo' => $siguienteNumero,
+                'nro_documento' => $nroDocumento,
+                'codigo_unico' => $codigoUnico,
+                'correlativo_area' => 0,
+                'parent_id' => $validatedData['parent_id'] ?? null,
+            ]);
+
+            // 3. Crea el primer movimiento [cite: 1605]
+            $documento->movimientos()->create([
+                'area_origen_id' => $usuario->primary_area_id,
+                'area_destino_id' => $validatedData['area_destino_id'],
+                'user_id' => $usuario->id,
+                'proveido' => 'Documento de origen',
+                'estado' => 'Derivado',
+            ]);
+
+            return Redirect::route('emitir.index')->with('success', 'Documento emitido correctamente.');
+        });
+        // --- FIN DE LA CORRECCIÓN DE TRANSACCIÓN ---
     }
 
     /**

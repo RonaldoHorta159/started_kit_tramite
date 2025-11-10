@@ -15,43 +15,25 @@ class AreaController extends Controller
      */
     public function index(Request $request)
     {
-        $perPage = max(1, min(100, (int) $request->integer('per_page', 10)));
-        $page = (int) $request->integer('page', 1);
+        $filters = $request->validate([
+            'nombre' => 'nullable|string',
+            'codigo' => 'nullable|string',
+            'estado' => 'nullable|array',
+        ]);
 
-        $allowedSorts = ['nombre', 'codigo', 'estado', 'created_at'];
-        $sortField = in_array($request->get('sort_field'), $allowedSorts, true)
-            ? $request->get('sort_field') : 'nombre';
-        $sortDir = $request->get('sort_direction') === 'desc' ? 'desc' : 'asc';
+        $sort = $request->validate([
+            'sort_field' => 'nullable|string|in:nombre,codigo,estado,created_at',
+            'sort_direction' => 'nullable|string|in:asc,desc',
+        ]);
 
-        $estadoVals = $request->has('estado')
-            ? array_values(array_filter((array) $request->input('estado'), fn($v) => $v !== ''))
-            : null;
-
-        $q = Area::query()
-            ->when($request->filled('nombre'), function ($q) use ($request) {
-                $v = trim((string) $request->input('nombre'));   // <- OJO: nombre
-                $q->where('nombre', 'like', "%{$v}%");
-            })
-            ->when($request->filled('codigo'), function ($q) use ($request) {
-                $v = trim((string) $request->input('codigo'));
-                $q->where('codigo', 'like', "%{$v}%");
-            })
-            ->when($estadoVals && count($estadoVals) > 0, fn($q) => $q->whereIn('estado', $estadoVals))
-            ->orderBy($sortField, $sortDir);
-
-        $areas = $q->paginate($perPage, ['*'], 'page', $page)->appends($request->query());
-
-        $filters = collect([
-            'nombre' => $request->input('nombre'),
-            'codigo' => $request->input('codigo'),
-            'estado' => $estadoVals ?: null,
-        ])->filter(fn($v) => $v !== null && $v !== '' && $v !== [])
-            ->map(fn($v, $k) => ['id' => $k, 'value' => $v])
-            ->values()->all();
+        $areas = Area::query()
+            ->filterAndSort($filters, $sort)
+            ->paginate($request->integer('per_page', 10))
+            ->withQueryString();
 
         return Inertia::render('areas/index', [
             'data' => $areas,
-            'filter' => $filters,
+            'filter' => $request->only(['nombre', 'codigo', 'estado']),
         ]);
     }
 
@@ -68,11 +50,7 @@ class AreaController extends Controller
      */
     public function store(StoreAreaRequest $request)
     {
-        Area::create([
-            'nombre' => $request->nombreArea,
-            'codigo' => $request->codigo ?? null,
-            'estado' => $request->estadoArea,
-        ]);
+        Area::create($request->validated());
         return to_route('areas.index')->with('success', 'Área creada correctamente');
     }
 
@@ -97,11 +75,7 @@ class AreaController extends Controller
      */
     public function update(UpdateAreaRequest $request, Area $area)
     {
-        $area->update([
-            'nombre' => $request->input('nombreArea'),
-            'codigo' => $request->input('codigo'),
-            'estado' => $request->input('estadoArea'),
-        ]);
+        $area->update($request->validated());
 
         return redirect()->route('areas.index', $request->query())
             ->with('success', 'Área actualizada correctamente');

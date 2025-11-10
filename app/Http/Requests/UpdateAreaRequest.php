@@ -3,6 +3,7 @@
 // app/Http/Requests/UpdateAreaRequest.php
 namespace App\Http\Requests;
 
+use App\Enums\Estado;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class UpdateAreaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->rol === 'Admin';
     }
 
     public function rules(): array
@@ -18,7 +19,7 @@ class UpdateAreaRequest extends FormRequest
         $areaId = $this->route('area')?->id; // por si cambia el binding
 
         return [
-            'nombreArea' => [
+            'nombre' => [
                 'required',
                 'string',
                 'max:100',
@@ -30,7 +31,7 @@ class UpdateAreaRequest extends FormRequest
                 'max:10',
                 Rule::unique('areas', 'codigo')->ignore($areaId)
             ],
-            'estadoArea' => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
+            'estado' => ['required', Rule::enum(Estado::class)],
         ];
     }
 }

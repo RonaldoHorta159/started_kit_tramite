@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Estado;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,8 +13,7 @@ class StoreAreaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // 2. Permitir la acción si el usuario está autenticado
-        return true;
+        return $this->user()->rol === 'Admin';
     }
 
     /**
@@ -25,9 +25,9 @@ class StoreAreaRequest extends FormRequest
     {
         // 3. Definir las reglas de validación para los campos del área
         return [
-            'nombreArea' => ['required', 'string', 'max:100', 'unique:areas,nombre'],
+            'nombre' => ['required', 'string', 'max:100', 'unique:areas,nombre'],
             'codigo' => ['nullable', 'string', 'max:10', 'unique:areas,codigo'],
-            'estadoArea' => ['required', Rule::in(['ACTIVO', 'INACTIVO'])],
+            'estado' => ['required', Rule::enum(Estado::class)],
         ];
     }
 }

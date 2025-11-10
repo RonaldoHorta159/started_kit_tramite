@@ -1,0 +1,243 @@
+Backend (Laravel)
+1) Rutas – routes/web.php
+
+Agregamos las rutas de actualización y borrado dentro del prefijo areas (además de index/store):
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::prefix('areas')->group(function () {
+        Route::get('/',            [AreaController::class, 'index'])->name('areas.index');
+        Route::post('/',           [AreaController::class, 'store'])->name('areas.store');
+        Route::put('/{area}',      [AreaController::class, 'update'])->name('areas.update');   // NUEVA
+        Route::delete('/{area}',   [AreaController::class, 'destroy'])->name('areas.destroy'); // NUEVA
+    });
+});
+
+2) Controlador – app/Http/Controllers/AreaController.php
+
+index(): server-side pagination/sorting/filtering:
+
+Query params: page, per_page, sort_field, sort_direction, nombre, codigo, estado[].
+
+Whitelist para orden: ['nombre','codigo','estado','created_at'].
+
+Devuelve data (paginador Laravel) + filter (rehidratación de filtros en el front).
+
+store(): crea con StoreAreaRequest (campos nombreArea, codigo, estadoArea).
+
+update(): mapeo 1:1 a columnas de BD (muy importante):
+
+$area->update([
+  'nombre' => $request->input('nombreArea'),
+  'codigo' => $request->input('codigo'),
+  'estado' => $request->input('estadoArea'),
+]);
+
+// (recomendado) conservar query actual:
+return redirect()->route('areas.index', $request->query())
+                 ->with('success', 'Área actualizada correctamente');
+
+
+destroy(): elimina y redirige (idealmente preservando query):
+
+return redirect()->route('areas.index', $request->query())
+                 ->with('success', 'Área eliminada correctamente');
+
+3) Requests de validación
+
+StoreAreaRequest (ya lo tenías):
+
+Reglas con nombreArea, codigo y estadoArea (ACTIVO/INACTIVO).
+
+UpdateAreaRequest (ajustado para coincidir con el front):
+
+public function rules(): array
+{
+    $areaId = $this->route('area')?->id;
+
+    return [
+        'nombreArea' => ['required','string','max:100', Rule::unique('areas','nombre')->ignore($areaId)],
+        'codigo'     => ['nullable','string','max:10', Rule::unique('areas','codigo')->ignore($areaId)],
+        'estadoArea' => ['required', Rule::in(['ACTIVO','INACTIVO'])],
+    ];
+}
+
+4) Modelo – app/Models/Area.php
+
+Aseguramos asignación masiva:
+
+protected $fillable = ['nombre','codigo','estado'];
+
+Frontend (Vue 3 + Inertia + TanStack + shadcn-vue)
+1) DataTable modular y mantenible
+
+Estructura final:
+
+resources/js/pages/areas/components/DataTable/
+  ├─ index.vue            // orquestador (componente, NO página)
+  ├─ useAreasTable.js     // composable: estado TanStack + sendQuery
+  ├─ Columns.js           // definición de columnas (incluye menú Opciones)
+  ├─ Toolbar.vue          // filtros (nombre + estado) + botón Crear + Columnas
+  ├─ Pagination.vue       // filas por página + navegación
+  ├─ CreateDialog.vue     // modal crear (Spinner + Switch shadcn)
+  ├─ EditDialog.vue       // modal editar (Spinner + Switch shadcn)
+  └─ ConfirmDelete.vue    // confirmación eliminar (AlertDialog)
+
+a) Orquestador – DataTable/index.vue
+
+Recibe data (paginador) y filter (rehidratación).
+
+Handlers handleEdit/handleDelete que abren modales y pasan el área.
+
+refreshAfterChange(): refetch SPA de la tabla con el mismo estado (page/per_page/sort/filtros) tras create/update/delete:
+
+import { router } from '@inertiajs/vue3'
+
+function refreshAfterChange ({ wasDelete = false } = {}) {
+  const s = table.getState()
+
+  // (opcional) retroceder de página al borrar el último ítem visible
+  const back = wasDelete && s.pagination.pageIndex > 0 && table.getRowModel().rows.length === 1
+  const nextIdx = back ? s.pagination.pageIndex - 1 : s.pagination.pageIndex
+
+  const filters = (s.columnFilters ?? []).reduce((acc, f) => {
+    let v = f.value
+    if (typeof v === 'string') v = v.trim()
+    if (Array.isArray(v) ? v.length > 0 : v != null && v !== '') acc[f.id] = v
+    return acc
+  }, {})
+
+  router.get('/areas', {
+    page: nextIdx + 1,
+    per_page: s.pagination.pageSize,
+    sort_field: s.sorting[0]?.id,
+    sort_direction: s.sorting.length ? (s.sorting[0].desc ? 'desc' : 'asc') : undefined,
+    ...filters,
+  }, { preserveState: false, preserveScroll: true, replace: true })
+}
+
+
+Nota: reemplazamos Ziggy por URL literal '/areas' para evitar errores de inicialización.
+
+b) Composable – useAreasTable.js
+
+TanStack configurado con:
+
+manualPagination, manualSorting, manualFiltering
+
+pageCount desde props
+
+Handlers onPaginationChange, onSortingChange, onColumnFiltersChange que llaman a sendQuery() (router.get('/areas', …)).
+
+Reset a pageIndex=0 al cambiar filtros u orden.
+
+Filtro estado: toggleEstado/clearEstado.
+
+Fallback para codigo: mostrar —.
+
+c) Columnas – Columns.js
+
+Columnas: select, nombre, codigo, estado, actions.
+
+actions: menú de shadcn DropdownMenu con Editar y Eliminar usando íconos de lucide-vue-next (MoreVertical, Pencil, Trash2), que disparan callbacks onEdit/onDelete pasados desde el orquestador.
+
+d) Toolbar – Toolbar.vue
+
+Filtro por nombre con debounce (400ms):
+
+const nombreQuery = ref(table.getColumn('nombre')?.getFilterValue() ?? '')
+let timer = null
+function onNombreInput(val) {
+  nombreQuery.value = val
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(applyNombreNow, 400)
+}
+function applyNombreNow() {
+  if (timer) { clearTimeout(timer); timer = null }
+  table.getColumn('nombre')?.setFilterValue((nombreQuery.value ?? '').trim())
+}
+
+
+En el template:
+
+<Input v-model="nombreQuery"
+       @input="onNombreInput($event?.target?.value)"
+       @keyup.enter="applyNombreNow"
+       @blur="applyNombreNow" />
+
+
+Filtro estado robusto con @select.prevent:
+
+“Activo” → emit('toggleEstado','ACTIVO', !estadoSet.has('ACTIVO'))
+
+“Inactivo” → idem
+
+“Limpiar filtros” → emit('clearEstado')
+
+Botón Crear y menú Columnas (mover desde index.vue a la Toolbar para verse al lado del botón).
+
+e) Pagination – Pagination.vue
+
+Selector “Filas por página” con:
+
+@update:model-value="(value) => { table.setPageIndex(0); table.setPageSize(Number(value)) }"
+
+
+Navegación con lucide (ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight).
+
+f) CreateDialog – CreateDialog.vue
+
+useForm + Spinner (form.processing) y bloqueo de inputs/botón.
+
+Switch shadcn-vue controlado con v-model (API real del wrapper):
+
+import { Switch } from '@/components/ui/switch'
+const estadoBool = computed({
+  get: () => form.estadoArea === 'ACTIVO',
+  set: (v) => { form.estadoArea = v ? 'ACTIVO' : 'INACTIVO' },
+})
+
+<Switch v-model="estadoBool" :disabled="form.processing" />
+<Label>{{ form.estadoArea }}</Label>
+
+
+Al éxito: toast, cerrar, reset, emit('created').
+
+g) EditDialog – EditDialog.vue
+
+Precarga desde props.area (incluyendo estado).
+
+Mismo patrón de Switch shadcn (v-model con computed booleano).
+
+PUT /areas/{id} + Spinner; al éxito: cerrar y emit('updated').
+
+h) ConfirmDelete – ConfirmDelete.vue
+
+AlertDialog de shadcn.
+
+DELETE /areas/{id} con Spinner; al éxito: cerrar y emit('deleted').
+
+i) Limpieza y compatibilidad
+
+Eliminamos ExpandedRow (ya no necesario).
+
+Cambiamos íconos Radix → lucide-vue-next.
+
+Solucionados warnings ESLint:
+
+Desestructurar props (const { row } = defineProps(...)).
+
+Usar emit en funciones (no declarar si no se usa).
+
+Quitar imports no utilizados (e.g., Button cuando no se usa).
+
+Evitamos Ziggy en el cliente (errores de areas.index) usando rutas literales '/areas'.
+
+UX / Lógica final
+
+Filtros, orden y paginación son server-side (consistentes con Inertia).
+
+Debounce en el filtro de nombre para reducir requests.
+
+Crear/Editar/Eliminar: SPA real (sin F5), con refreshAfterChange() desde el padre que conserva exactamente el estado de la tabla.
+
+Switch shadcn-vue sincronizado con el label (form.estadoArea) en crear/editar.

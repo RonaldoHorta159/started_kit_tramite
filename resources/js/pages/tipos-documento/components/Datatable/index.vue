@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const props = defineProps({
     data: { type: Object, required: true },
-    filter: { type: Array, default: () => [] },
+    filter: { type: Object, default: () => ({}) },
     estadosOptions: { type: Array, default: () => [] },
 })
 

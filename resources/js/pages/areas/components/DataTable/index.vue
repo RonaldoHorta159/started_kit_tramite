@@ -15,7 +15,7 @@ import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
     data: { type: Object, required: true },
-    filter: { type: Array, default: () => [] },
+    filter: { type: Object, default: () => ({}) },
 })
 
 const showCreate = ref(false)

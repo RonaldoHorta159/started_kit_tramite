@@ -1,0 +1,34 @@
+[
+{"type":"header","version":"4.9.11","comment":"Export to JSON plugin for PHPMyAdmin"},
+{"type":"database","name":"c1790925_tramite"},
+{"type":"table","name":"man_oficina","database":"c1790925_tramite","data":
+[
+{"id_oficina":"1","nombre":"TRAMITE DOCUMENTARIO","abreviatura":"TD"},
+{"id_oficina":"2","nombre":"GERENCIA GENERAL","abreviatura":"GG"},
+{"id_oficina":"3","nombre":"GESTION DEL TALENTO HUMANO","abreviatura":"RH"},
+{"id_oficina":"4","nombre":"LOGISTICA Y ABASTECIMIENTO","abreviatura":"ABA"},
+{"id_oficina":"5","nombre":"CONTABILIDAD Y COSTOS","abreviatura":"CONT"},
+{"id_oficina":"6","nombre":"ASESORIA JURIDICA","abreviatura":"ASE"},
+{"id_oficina":"7","nombre":"TESORERIA Y CONTROL FINANCIERO","abreviatura":"TES"},
+{"id_oficina":"8","nombre":"PLANEAMIENTO Y PRESUPUESTO","abreviatura":"PP"},
+{"id_oficina":"9","nombre":"ARCHIVO","abreviatura":"ARCH"},
+{"id_oficina":"10","nombre":"ASISTENCIA SOCIAL","abreviatura":"PROY"},
+{"id_oficina":"11","nombre":"SERVICIOS TURISTICOS","abreviatura":"ST"},
+{"id_oficina":"13","nombre":"SECRETARIA GENERAL","abreviatura":"SG"},
+{"id_oficina":"14","nombre":"TECNOLOGIAS DE INFORMACION","abreviatura":"TI"},
+{"id_oficina":"15","nombre":"DEPARTAMENTO DE ALMACEN","abreviatura":"ALMCEN"},
+{"id_oficina":"16","nombre":"CULTURA Y DEPORTE","abreviatura":"CULDEP"},
+{"id_oficina":"17","nombre":"OFICINA MACHUPICCHU","abreviatura":"OM"},
+{"id_oficina":"18","nombre":"GUARDIANIA","abreviatura":"GD"},
+{"id_oficina":"19","nombre":"DEPARTAMENTO DE PATRIMONIO","abreviatura":"CONT. PATR."},
+{"id_oficina":"20","nombre":"RELACIONES PUBLICAS Y MARKETING","abreviatura":"RRPP"},
+{"id_oficina":"21","nombre":"ENLACE INTERINSTITUCIONAL","abreviatura":"EI"},
+{"id_oficina":"22","nombre":"MANTENIMIENTO","abreviatura":"MNT"},
+{"id_oficina":"23","nombre":"DIRECTORIO","abreviatura":"DIR"},
+{"id_oficina":"24","nombre":"PROCEDIMIENTO ADMINISTRATIVO DISCIPLINARIO","abreviatura":"PAD"},
+{"id_oficina":"25","nombre":"DEPARTAMENTO DE PSICOLOGIA","abreviatura":"PSICO"},
+{"id_oficina":"26","nombre":"COMITE DE SEGURIDAD Y SALUD","abreviatura":"CSST"},
+{"id_oficina":"27","nombre":"SEGURIDAD Y SALUD EN EL TRABAJO","abreviatura":"SST"}
+]
+}
+]

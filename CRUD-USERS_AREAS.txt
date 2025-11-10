@@ -1,0 +1,415 @@
+Resumen ejecutivo
+
+Implementamos un CRUD completo de usuarios con paginación, orden y filtros server-side usando Laravel + Inertia + Vue 3 + TanStack Table.
+
+Integramos asignación de primary_area_id (relación users.primary_area_id → areas.id), con Select y validación.
+
+Estandarizamos modales de Crear / Editar / Eliminar con UX consistente, notificaciones y refresco automático del datatable después de cada acción.
+
+Arquitectura y flujo
+
+Frontend
+
+DataTable (TanStack): columnas, selección por fila, menú de acciones (Editar/Eliminar).
+
+Toolbar: búsqueda global (q), filtros múltiples por Estado y Rol, filtro select por Área y menú para mostrar/ocultar columnas.
+
+Pagination: controlada desde el estado de TanStack (sincronizada con el backend).
+
+Modales
+
+UserFormModal.vue: crear/editar (sin watch, hidratación por lifecycle + :key, v-model:open).
+
+DeleteUserAlert.vue: confirmación de borrado (useForm.delete), cierra/avisa y refresca lista.
+
+Estado y orquestación
+
+useUsersTable.js: composable que conecta TanStack con Inertia para paginación/orden/filtrado manual (server-side), reactivo a props.data/props.filter mediante refs (toRef). Expone refresh() para recargar sólo data y filter.
+
+Backend (Laravel)
+
+Rutas: GET/POST/PUT/DELETE /users con nombres users.index/store/update/destroy.
+
+UserController
+
+index: whitelist de orden (dni, nombres, email, rol, estado, created_at), filtros (q, estado[], rol[], area_id), with('primaryArea'), paginate()->appends(). Devuelve data, filter y opciones (areasOptions, rolesOptions, estadosOptions).
+
+store / update: usan FormRequests (validación, hash de password, update opcional del password).
+
+destroy: borra y redirige a users.index preservando query params (para mantener estado de la tabla).
+
+Base de datos
+
+users: campos (dni, nombres, apellidos, email, celular, password, foto_path, primary_area_id, rol, estado).
+
+areas: catálogo.
+
+FK users.primary_area_id → areas.id con índice y nullOnDelete.
+
+Relación Eloquent User::primaryArea().
+
+Decisiones clave y correcciones que hicimos
+
+Server-side datatable real
+
+Activamos manualPagination, manualSorting, manualFiltering y conectamos cambios de UI con router.get('/users', {...}).
+
+En useUsersTable hicimos el estado reactivo a props (ya no es “foto” estática).
+
+Filtros alineados front/back
+
+Columnas “fantasma” (q, area_id) para enviar filtros sin renderizar columnas.
+
+Mapeo Estado y Rol con valores canónicos (y soporte a {value,label}).
+
+Orden robusto y seguro
+
+Whitelist de campos de orden (dni incluido).
+
+“Área” sin orden por ahora (evita mismatch con backend).
+
+Modales consistentes (sin watch)
+
+UserFormModal: v-model:open, hidratación sin watchers usando onMounted/onUpdated + clave :key para remonte visual por registro (crítico para <Select>).
+
+Alineación de eventos: el hijo emite update:open; el padre usa v-model:open. Eliminamos el desajuste modelValue.
+
+Autocompletar: carga limpia de form al abrir y al cambiar de registro.
+
+Eliminar que realmente refresca
+
+DeleteUserAlert: useForm.delete + toast + cerrar modal + reload/visit a /users con query params.
+
+destroy() redirige a users.index preservando el query.
+
+Crear/Editar que refresca
+
+onSuccess: cerrar modal, notificar, y visitar /users${window.location.search} con preserveState:false.
+
+Padre también puede llamar refresh() del composable (recarga parcial only: ['data','filter']).
+
+Estructura de archivos
+
+resources/js/pages/users/index.vue: página Inertia que pasa data/filter/options a la tabla.
+
+components/DataTable/index.vue: orquestador (tabla, toolbar, paginación, modales).
+
+components/DataTable/useUsersTable.js: composable TanStack ↔ Inertia (server-side).
+
+components/DataTable/Columns.js: definición de columnas y acciones.
+
+components/DataTable/Toolbar.vue: filtros y buscador.
+
+components/DataTable/Pagination.vue: control de página y page size.
+
+components/DataTable/UserFormModal.vue: crear/editar (sin watchers).
+
+components/DataTable/DeleteUserAlert.vue: confirmación de eliminación.
+
+Qué quedó funcionando (end-to-end)
+
+Listado de usuarios con paginación, orden por columnas, búsqueda global, filtros por estado/rol, y filtro por área.
+
+Crear usuario → validación, toast, cierre del modal y lista actualizada.
+
+Editar usuario → autocompletado correcto (incluyendo selects), validación, toast, cierre del modal y lista actualizada.
+
+Eliminar usuario → confirmación, toast, datos actualizados en la tabla.
+
+Asignación y visualización de área primaria (join vía with('primaryArea') y Select por primary_area_id).
+
+Ideas de siguiente iteración (si quieres)
+
+Hacer ordenable la columna Área (leftJoin('areas', ...) y orderBy('areas.nombre')).
+
+Acciones masivas (activar/desactivar, eliminar en lote).
+
+Exportar CSV con filtros aplicados.
+
+Policies (Gate/Policy) para permisos por rol.
+
+Optimizar UI: loaders en celdas, mensajes vacíos contextualizados, atajos de teclado.
+
+Si quieres, te preparo un checklist de tests manuales para validar cada flujo (crear, editar, eliminar, paginar, filtrar) antes de cerrarlo y moverlo a producción.
+
+✅ Preparación
+
+ Base limpia / seed
+
+Paso: aplica migraciones y siembra 10–50 usuarios y 5–10 áreas.
+
+Resultado: hay suficientes datos para probar paginación, filtros y orden.
+
+ Sesión iniciada
+
+Paso: inicia sesión con un usuario con permisos para CRUD.
+
+Resultado: acceso a /users sin errores.
+
+🧭 Carga inicial / Render
+
+ Render inicial
+
+Paso: abre /users.
+
+Resultado: tabla visible, columnas correctas, toolbar y paginación presentes; sin errores en consola.
+
+ Cero resultados
+
+Paso: filtra algo imposible (ej. q=zzzzzzzz).
+
+Resultado: mensaje “No results.” y sin errores.
+
+🔁 Paginación (server-side)
+
+ Cambiar página
+
+Paso: avanza a la página 2.
+
+Resultado: tabla muestra nuevos registros; la URL refleja ?page=2.
+
+ Cambiar “Rows per page”
+
+Paso: cambia a 50.
+
+Resultado: se ven 50 filas (o menos si no alcanza); URL con per_page=50.
+
+ Botones de extremos
+
+Paso: ir a la primera y última página.
+
+Resultado: botones habilitan/deshabilitan correctamente.
+
+↕️ Orden (server-side)
+
+ Orden por DNI
+
+Paso: clic en cabecera DNI (asc/desc).
+
+Resultado: filas ordenadas; URL con sort_field=dni&sort_direction=asc|desc.
+
+ Orden por Nombres / Email / Rol / Estado
+
+Paso: alterna orden en cada columna.
+
+Resultado: tabla cambia y la URL refleja el orden.
+
+ Área (no ordenable)
+
+Paso: intenta ordenar Área.
+
+Resultado: no cambia el orden (desactivado – sin errores).
+
+🔎 Filtros / Búsqueda
+
+ Búsqueda global (q)
+
+Paso: escribe parte de un DNI o nombre; enter/blur.
+
+Resultado: sólo aparecen coincidencias; URL incluye q=....
+
+ Filtro Estado (multi)
+
+Paso: marca “Activo”; luego “Inactivo”; luego ambos.
+
+Resultado: tabla filtra correctamente; URL incluye estado[]=....
+
+ Filtro Rol (multi)
+
+Paso: marca uno o más roles; limpiar filtro.
+
+Resultado: tabla actualiza y se limpian filtros.
+
+ Filtro Área (select)
+
+Paso: elige un área; luego “Todas”.
+
+Resultado: tabla filtra por area_id; “Todas” quita area_id.
+
+➕ Crear usuario
+
+ Abrir modal Crear
+
+Paso: clic “Crear nuevo”.
+
+Resultado: modal abierto, campos en blanco (estado = “Activo”).
+
+ Validación client/server mínima
+
+Paso: envía vacío; luego DNI < 8; email inválido; repetir email/dni existente.
+
+Resultado: muestra errores de validación y no crea registro.
+
+ Crear OK
+
+Paso: completa todos los campos válidos (password requerido); asigna Área; elige Rol y Estado.
+
+Resultado: toast de éxito, modal se cierra, tabla actualizada mostrando el nuevo usuario (según filtros/página), sin errores en consola.
+
+✏️ Editar usuario
+
+ Autocompletar
+
+Paso: en el menú de una fila, “Editar”.
+
+Resultado: modal con todos los campos prellenos (incluyendo Área/ Rol/ Estado).
+
+ Password opcional
+
+Paso: no ingreses password y guarda.
+
+Resultado: se actualizan otros campos y no cambia la contraseña.
+
+ Cambiar Área / Rol / Estado
+
+Paso: modifica esos selects y guarda.
+
+Resultado: persiste en BD y la tabla refleja los nuevos valores.
+
+ URL/estado
+
+Paso: tras guardar, revisa URL y tabla.
+
+Resultado: se mantiene el query (filtros/página); tabla refrescada.
+
+🗑️ Eliminar usuario
+
+ Confirmación
+
+Paso: “Eliminar” en una fila → confirmar.
+
+Resultado: toast de éxito, modal se cierra, la fila desaparece; no aparece en BD.
+
+ Cancelar
+
+Paso: abrir eliminar → “Cancelar”.
+
+Resultado: no cambia nada.
+
+🔄 Rehidratación / Estado
+
+ preserveState
+
+Paso: cambia filtros y página; elimina o edita un registro.
+
+Resultado: tras operación, se conservan filtros/página y se ve la tabla actualizada.
+
+ Back/Forward del navegador
+
+Paso: usa atrás/adelante con filtros activos.
+
+Resultado: estado de la tabla coincide con la URL.
+
+🔐 Validaciones / Reglas (FormRequests)
+
+ StoreUserRequest
+
+Paso: prueba reglas (dni 8 dígitos único, email único, password confirmed, primary_area_id existente o null, rol/estado válidos).
+
+Resultado: errores claros y localizados; no se crea registro inválido.
+
+ UpdateUserRequest
+
+Paso: email/dni duplicados (de otro usuario), password vacío (debe ignorarse), primary_area_id inválido.
+
+Resultado: sólo actualiza si es válido; password queda igual si no se envía.
+
+🧱 Integridad de datos
+
+ FK primary_area_id
+
+Paso: cambia el área; elimina un área usada (si la FK permite nullOnDelete).
+
+Resultado: si eliminas el área, primary_area_id se vuelve NULL (según FK); no hay huérfanos inválidos.
+
+ Relación primaryArea
+
+Paso: revisa que en el listado aparezca el nombre del área (con with('primaryArea')).
+
+Resultado: se ve el nombre correcto o “—” si no hay área.
+
+🧩 UI/UX
+
+ Modales
+
+Paso: abrir/cerrar con botón, fuera del modal y tecla Esc.
+
+Resultado: sin errores; foco atrapado correctamente.
+
+ Selects (Área/Rol/Estado)
+
+Paso: abrir/cerrar; seleccionar; ver etiqueta correcta.
+
+Resultado: valor persistente y consistente tras guardar.
+
+ Toasts
+
+Paso: crear/editar/eliminar.
+
+Resultado: mensajes de éxito; mensajes de error en validaciones.
+
+⚙️ Rendimiento
+
+ Respuestas rápidas
+
+Paso: cambiar rápidamente orden/filtros/página.
+
+Resultado: navegación estable (sin “parpadeos”, sin errores 429).
+
+ Carga de 100+ filas
+
+Paso: per_page=100.
+
+Resultado: render fluido; sin cuelgues.
+
+♿ Accesibilidad mínima
+
+ Foco
+
+Paso: abre modal; tabula por los campos.
+
+Resultado: orden de foco lógico; cierre con Esc.
+
+ Texto alternativo
+
+Paso: avatares con alt (o fallback de iniciales).
+
+Resultado: correcto.
+
+📌 Logging y Network
+
+ Consola limpia
+
+Paso: recorre todas las acciones.
+
+Resultado: sin Unhandled error ni warnings.
+
+ Network (DevTools)
+
+Paso: revisa las solicitudes GET/POST/PUT/DELETE.
+
+Resultado: códigos 2xx; los redirects tras DELETE/PUT/POST terminan en GET /users?....
+
+🧪 Casos borde
+
+ Campos largos (nombres/apellidos con ~100 chars).
+
+ Sin área (primary_area_id = null).
+
+ Emails con mayúsculas (debe normalizarse / validarse).
+
+ Espacios en DNI/email (recortes esperados).
+
+ Roles/Estados con opciones {value,label} (valor canónico al guardar).
+
+✔️ Criterio de aceptación final
+
+El datatable refleja cualquier alta/baja/edición sin recargar manualmente la página y conservando filtros/paginación.
+
+Los modales autocompletan y se cierran sin errores.
+
+La URL siempre representa el estado actual (page, per_page, sort, filters).
+
+La BD mantiene integridad (FK) y reglas de validación.
+
+Si quieres, te preparo un script de seeding con datos realistas (nombres/áreas) para repetir estas pruebas rápido.

@@ -16,48 +16,25 @@ class TipoDocumentoController extends Controller
      */
     public function index(Request $request)
     {
-        $perPage = max(1, min(100, (int) $request->integer('per_page', 10)));
-        $page = (int) $request->integer('page', 1);
+        $filters = $request->validate([
+            'q' => 'nullable|string',
+            'estado' => 'nullable|array',
+        ]);
 
-        // Orden seguro
-        $allowedSorts = ['nombre', 'estado', 'created_at'];
-        $sortField = in_array($request->get('sort_field'), $allowedSorts, true)
-            ? $request->get('sort_field') : 'nombre';
-        $sortDir = $request->get('sort_direction') === 'desc' ? 'desc' : 'asc';
+        $sort = $request->validate([
+            'sort_field' => 'nullable|string|in:nombre,estado,created_at',
+            'sort_direction' => 'nullable|string|in:asc,desc',
+        ]);
 
-        // Filtro múltiple por estado
-        $estadoVals = $request->has('estado')
-            ? array_values(array_filter((array) $request->input('estado'), fn($v) => $v !== ''))
-            : null; // ['Activo','Inactivo']
-
-        $query = TipoDocumento::query()
-            // Búsqueda por nombre
-            ->when($request->filled('q'), function ($qb) use ($request) {
-                $v = trim((string) $request->string('q'));
-                $qb->where('nombre', 'like', "%{$v}%");
-            })
-            // Filtro estado
-            ->when($estadoVals && count($estadoVals) > 0, fn($qb) => $qb->whereIn('estado', $estadoVals))
-            ->orderBy($sortField, $sortDir);
-
-        $tipos = $query->paginate($perPage, ['*'], 'page', $page)
-            ->appends($request->query());
-
-        // Rehidratación de filtros para TanStack (array de {id,value})
-        $filters = collect([
-            'q' => $request->input('q'),
-            'estado' => $estadoVals ?: null,
-        ])->filter(fn($v) => $v !== null && $v !== '' && $v !== [])
-            ->map(fn($v, $k) => ['id' => $k, 'value' => $v])
-            ->values()
-            ->all();
-
-        $estadosOptions = ['Activo', 'Inactivo'];
+        $tipos = TipoDocumento::query()
+            ->filterAndSort($filters, $sort)
+            ->paginate($request->integer('per_page', 10))
+            ->withQueryString();
 
         return Inertia::render('tipos-documento/index', [
-            'data' => $tipos,          // paginator
-            'filter' => $filters,        // [{id,value}, ...]
-            'estadosOptions' => $estadosOptions,
+            'data' => $tipos,
+            'filter' => $filters,
+            'estadosOptions' => ['Activo', 'Inactivo'],
         ]);
     }
 

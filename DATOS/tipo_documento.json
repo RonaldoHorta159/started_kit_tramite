@@ -1,0 +1,33 @@
+[
+{"type":"header","version":"4.9.11","comment":"Export to JSON plugin for PHPMyAdmin"},
+{"type":"database","name":"c1790925_tramite"},
+{"type":"table","name":"tipo_documento","database":"c1790925_tramite","data":
+[
+{"id_tipo_documento":"1","descripcion":"ANEXO","abreviatura":"ANEXO"},
+{"id_tipo_documento":"2","descripcion":"ACTA","abreviatura":"ACTA"},
+{"id_tipo_documento":"3","descripcion":"CARTA","abreviatura":"CARTA"},
+{"id_tipo_documento":"4","descripcion":"CARTA CIRCULAR","abreviatura":"CARTA CIRCULAR"},
+{"id_tipo_documento":"5","descripcion":"CARTA MÚLTIPLE","abreviatura":"CARTA MULT."},
+{"id_tipo_documento":"6","descripcion":"CARTA NOTARIAL","abreviatura":"CARTA NOT."},
+{"id_tipo_documento":"7","descripcion":"CIRCULAR","abreviatura":"CIRCULAR"},
+{"id_tipo_documento":"8","descripcion":"CONTRATO","abreviatura":"CONTRATO"},
+{"id_tipo_documento":"9","descripcion":"CONVENIO","abreviatura":"CONVENIO"},
+{"id_tipo_documento":"10","descripcion":"DECLARACIÓN JURADA","abreviatura":"DJ"},
+{"id_tipo_documento":"11","descripcion":"DICTAMEN","abreviatura":"DICTAMEN"},
+{"id_tipo_documento":"12","descripcion":"EXPEDIENTE","abreviatura":"EXP."},
+{"id_tipo_documento":"13","descripcion":"INFORME","abreviatura":"INF."},
+{"id_tipo_documento":"14","descripcion":"INFORME CIRCULAR","abreviatura":"INF. CIRCULAR"},
+{"id_tipo_documento":"15","descripcion":"INFORME MULTIPLE","abreviatura":"INF. MULT."},
+{"id_tipo_documento":"16","descripcion":"INVITACION","abreviatura":"INVITACION"},
+{"id_tipo_documento":"17","descripcion":"MEMO MÚLTIPLE","abreviatura":"MEMO. MULT."},
+{"id_tipo_documento":"18","descripcion":"MEMORANDUM","abreviatura":"MEMO."},
+{"id_tipo_documento":"19","descripcion":"MEMORANDUM CIRCULAR","abreviatura":"MEMO. CIRCULAR"},
+{"id_tipo_documento":"20","descripcion":"MEMORIAL","abreviatura":"MEMORIAL"},
+{"id_tipo_documento":"21","descripcion":"NOTIFICACIÓN","abreviatura":"NOTIFI."},
+{"id_tipo_documento":"22","descripcion":"OFICIO","abreviatura":"OFI."},
+{"id_tipo_documento":"23","descripcion":"OFICIO CIRCULAR","abreviatura":"OFI. CIRCULAR"},
+{"id_tipo_documento":"24","descripcion":"OFICIO MÚLTIPLE","abreviatura":"OFI. MULT."},
+{"id_tipo_documento":"25","descripcion":"REQUERIMIENTO","abreviatura":"REQ."}
+]
+}
+]

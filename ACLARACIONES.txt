@@ -1,0 +1,34 @@
+
+#####################################################################
+# REDEFINICIÓN DEL FLUJO DE EMISIÓN DE TRÁMITES
+# Fecha: 2025-10-01
+# Estas reglas anulan cualquier especificación anterior sobre la creación de documentos.
+#####################################################################
+
+1.  **Nro. de Documento: Correlativo por Tipo de Documento.**
+    * El campo "Nro. de Documento" ya no es de entrada manual.
+    * Su valor se autogenera y es un correlativo basado en el "Tipo de Documento" seleccionado y el año actual.
+    * Ejemplo: Si el último INFORME del 2025 fue el N° 45, al seleccionar "INFORME", el campo se autocompletará con "46". Si se cambia a "ACTA", buscará el último correlativo de ACTA y se actualizará.
+
+2.  **Campo "Remitente" Opcional.**
+    * El campo para seleccionar un "Remitente" (de la tabla de remitentes externos) es opcional.
+    * Si se deja en blanco, el trámite se considera 100% interno, originado por el área del usuario que lo crea.
+    * Si se selecciona un remitente, significa que el trámite se está registrando en nombre de una persona o entidad externa (flujo de Mesa de Partes).
+
+3.  **Archivo Adjunto Opcional.**
+    * Adjuntar un archivo PDF no es obligatorio para emitir un trámite.
+    * **Requisito Técnico Indispensable:** La columna `archivo_path` en la tabla `documentos` debe ser modificada en su migración para ser `NULLABLE`.
+
+4.  **Distinción Funcional de Vistas Principales.**
+    * **Bandeja de Entrada:** Es la lista de "pendientes por recibir". Muestra exclusivamente los documentos donde el `area_actual_id` es igual al área del usuario autenticado. Un usuario NO ve en su bandeja los documentos que él mismo ha creado.
+    * **Gestión de Documentos:** Es el registro histórico de trámites y el punto de creación. Para un usuario, esta vista debe mostrar principalmente los documentos que su usuario ha creado (`user_id` = `auth()->id()`), sirviendo como un registro de "trámites emitidos".
+
+5.  **Flujo de Emisión (Resumen).**
+    * El usuario va a "Gestión de Documentos" y hace clic en "Nuevo".
+    * Selecciona "Tipo de Documento" y el "Nro. de Documento" se autocompleta.
+    * Selecciona un "Destino" (área) obligatorio.
+    * Rellena "Asunto" y "Folios".
+    * Opcionalmente, adjunta un PDF.
+    * Al guardar, el sistema crea el documento con `area_origen_id` (su área), `area_actual_id` (el destino), y `estado` = 'En Trámite'. Además, registra el primer `Movimiento` de derivación.
+
+este sistema es para una empresa pequeña , con 15 a 20 oficinas como maximo, en cuanto a usuarios no pasan de los 30 o 35 , tambien pedirte que para poder comenzar con algun modulo antes definamos bien el flujo y proceso de ese modulo antes de continuar , ejemplo si iremos con el login primero me preguntes como es detalladamente que lo quiero , quiza en la documentacion no este tan precisa esa informacion , y asi con todos los modulos sin mas podemos empzar

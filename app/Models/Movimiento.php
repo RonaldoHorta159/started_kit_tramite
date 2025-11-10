@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +45,7 @@ class Movimiento extends Model
         'user_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'estado' => EstadoMovimiento::class,
     ];
 
     // ======================================================================

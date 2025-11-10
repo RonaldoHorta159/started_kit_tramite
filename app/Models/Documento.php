@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoDocumento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -57,6 +58,7 @@ class Documento extends Model
         'anio_creacion' => 'integer', // Castear la columna generada
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'estado' => EstadoDocumento::class,
     ];
 
     // ======================================================================

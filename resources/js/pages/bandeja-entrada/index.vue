@@ -1,37 +1,22 @@
-<script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { bandejaEntrada } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+<script setup>
+import AppLayout from '@/layouts/AppLayout.vue'
+import { Head, usePage } from '@inertiajs/vue3'
+import DataTable from './components/DataTable/index.vue'
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Bandeja de Entrada',
-        href: bandejaEntrada().url,
-    },
-];
+const { props } = usePage()
+const data = props.data
+const filter = props.filter ?? {}
+const estadosOptions = props.estadosOptions ?? []
+
+const breadcrumbs = [{ title: 'Bandeja de Entrada', href: '/bandeja-entrada' }]
 </script>
 
 <template>
-
-    <Head title="Bandeja de entrada" />
-
+    <Head title="Bandeja de Entrada" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-                <div
-                    class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                </div>
-            </div>
-            <div
-                class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-            </div>
+            <h1 class="text-3xl font-bold">Bandeja de Entrada</h1>
+            <DataTable :data="data" :filter="filter" :estados-options="estadosOptions" />
         </div>
     </AppLayout>
 </template>

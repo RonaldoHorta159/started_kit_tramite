@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Building, LayoutGrid, UsersRound, Files, CircleFadingArrowUp } from 'lucide-vue-next';
+import { Building, LayoutGrid, UsersRound, Files, CircleFadingArrowUp, Inbox } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         title: 'Emitir',
         href: '/emitir',
         icon: CircleFadingArrowUp,
+    },
+    {
+        title: 'Bandeja de Entrada',
+        href: '/bandeja-entrada',
+        icon: Inbox,
     },
 
     {

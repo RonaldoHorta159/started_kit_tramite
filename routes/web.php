@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\BandejaEntradaController;
 use App\Http\Controllers\Emitir\CorrelativeController;
 use App\Http\Controllers\TipoDocumento\TipoDocumentoController;
 use App\Http\Controllers\User\UserController;
@@ -18,6 +19,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
+    Route::get('/bandeja-entrada', [BandejaEntradaController::class, 'index'])->name('bandeja-entrada.index');
+
     // ... (tus rutas de areas, users, tipos-documento) ...
     Route::resource('areas', AreaController::class)->only([
         'index', 'store', 'update', 'destroy'
@@ -31,12 +34,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['tipos-documento' => 'tipo_documento']) // Opcional: para claridad
         ->only(['index', 'store', 'update', 'destroy']);
 
-    Route::prefix('emitir')->name('emitir.')->group(function () {
-        Route::get('/', [EmitirController::class, 'index'])->name('index');
-        Route::post('/', [EmitirController::class, 'store'])->name('store');
-        Route::put('/{documento}', [EmitirController::class, 'update'])->name('update');
-        Route::delete('/{documento}', [EmitirController::class, 'destroy'])->name('destroy');
-    });
+    Route::resource('emitir', EmitirController::class)->only([
+        'index', 'store', 'update', 'destroy'
+    ]);
 
     // --- INICIO DE LA CORRECCIÓN DE RUTA ---
     Route::get('/correlatives/{tipo_documento}', [CorrelativeController::class, 'show'])
